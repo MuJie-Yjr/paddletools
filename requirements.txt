@@ -1,0 +1,5 @@
+# The PPOCR Workbench is built with C++/Qt/CMake and does not need Python UI
+# packages from this file.
+#
+# PaddleX training uses the dedicated conda environment configured by
+# PPOCR_PADDLEX_PYTHON and scripts/bootstrap_paddlex_py312.ps1.
