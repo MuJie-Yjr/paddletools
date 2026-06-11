@@ -1,0 +1,64 @@
+/* PPOCR Workbench design tokens.
+   These @token declarations are parsed by src/app/main.cpp before Qt sees QSS. */
+
+@token color-bg #0F1115;
+@token color-surface-1 #171A21;
+@token color-surface-2 #1F2430;
+@token color-surface-3 #252B38;
+@token color-border #2A3140;
+@token color-border-muted #232938;
+@token color-border-strong #3A4354;
+
+@token color-rail-bg #101722;
+@token color-rail-button #151D2A;
+@token color-control #232936;
+@token color-control-hover #2B3342;
+@token color-disabled-bg #161A22;
+@token color-input #141922;
+@token color-input-focus #171D28;
+@token color-scroll-bg #0D1016;
+@token color-splitter #1A202B;
+@token color-selection #20395C;
+
+@token color-primary #2563EB;
+@token color-primary-hover #3B82F6;
+@token color-primary-active-bg #123C78;
+@token color-primary-pressed-bg #0F3264;
+@token color-primary-subtle #14243A;
+@token color-primary-subtle-hover #18385D;
+
+@token color-success #22C55E;
+@token color-success-hover #16A34A;
+@token color-warning #F59E0B;
+@token color-danger #EF4444;
+@token color-info #38BDF8;
+
+@token text-primary #E5E7EB;
+@token text-secondary #9CA3AF;
+@token text-muted #6B7280;
+@token text-disabled #4B5563;
+@token text-on-accent #FFFFFF;
+@token text-success #A7F3D0;
+@token text-warning #FDE68A;
+@token text-danger #FECACA;
+@token text-info #BAE6FD;
+@token text-layout #DDD6FE;
+
+@token color-canvas-bg #0B0D12;
+@token annotation-ocr #22C55E;
+@token annotation-layout #A855F7;
+@token annotation-selected #38BDF8;
+@token annotation-unchecked #F59E0B;
+@token annotation-error #EF4444;
+
+@token status-neutral-bg #202633;
+@token status-success-bg #102418;
+@token status-success-border #1E6B3A;
+@token status-warning-bg #2A2110;
+@token status-warning-border #7C5314;
+@token status-danger-bg #34151A;
+@token status-danger-border #991B1B;
+@token status-info-bg #112337;
+@token status-info-border #1E5A78;
+@token status-layout-bg #39265F;
+@token status-layout-border #6D4ACB;

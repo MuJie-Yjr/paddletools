@@ -454,8 +454,7 @@ if ($TrainingProbe) {
     Step "training runner real PaddleX probe"
     $probePython = $env:PPOCR_PADDLEX_PYTHON
     if ([string]::IsNullOrWhiteSpace($probePython)) {
-        $preferredPython = "D:/IDE/anconda/envs/paddleX-py312/python.exe"
-        $probePython = if (Test-Path -LiteralPath $preferredPython -PathType Leaf) { $preferredPython } else { "python" }
+        $probePython = "python"
     }
     $probeReport = Join-Path $verifyRoot "training_run_probe.json"
     $probeLog = Join-Path $verifyRoot "training_run_probe.log"

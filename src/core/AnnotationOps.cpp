@@ -22,11 +22,32 @@ static QJsonArray roundedPoints(const QJsonArray& points) {
     return output;
 }
 
+static QRectF pointsBoundingRect(const QJsonArray& points) {
+    double minX = 1e12;
+    double minY = 1e12;
+    double maxX = -1e12;
+    double maxY = -1e12;
+    for (const auto& item : points) {
+        const auto point = item.toArray();
+        if (point.size() < 2) {
+            continue;
+        }
+        minX = std::min(minX, point.at(0).toDouble());
+        minY = std::min(minY, point.at(1).toDouble());
+        maxX = std::max(maxX, point.at(0).toDouble());
+        maxY = std::max(maxY, point.at(1).toDouble());
+    }
+    if (minX > maxX || minY > maxY) {
+        return QRectF();
+    }
+    return QRectF(minX, minY, std::max(1.0, maxX - minX), std::max(1.0, maxY - minY));
+}
+
 static int nextReadingOrder(const QJsonObject& annotation) {
     int maxOrder = 0;
     for (const auto& value : annotation.value("regions").toArray()) {
         const auto region = value.toObject();
-        if (region.value("type").toString() == "ocr_text") {
+        if (regionTypeFromString(region.value("type").toString()).value_or(RegionType::OcrText) == RegionType::OcrText) {
             maxOrder = std::max(maxOrder, region.value("reading_order").toInt());
         }
     }
@@ -54,25 +75,25 @@ QJsonObject AnnotationOps::addOcrRegion(
     const QJsonObject& annotation,
     const QJsonArray& points,
     const QString& text,
-    const QString& source,
+    AnnotationSource source,
     bool checked) {
     QJsonObject output = annotation;
     QJsonArray regions = output.value("regions").toArray();
     const QJsonArray normalized = roundedPoints(points);
     regions.append(QJsonObject{
         {"id", nextRegionId(output, "text")},
-        {"type", "ocr_text"},
+        {"type", toString(RegionType::OcrText)},
         {"shape", normalized.size() == 4 ? "quad" : "polygon"},
         {"points", normalized},
         {"text", text},
         {"ignore", false},
         {"reading_order", nextReadingOrder(output)},
-        {"source", source},
+        {"source", toString(source)},
         {"checked", checked},
         {"confidence", QJsonValue::Null},
     });
     output["regions"] = regions;
-    output["status"] = "labeled";
+    output["status"] = toString(PageStatus::Labeled);
     return output;
 }
 
@@ -80,20 +101,33 @@ QJsonObject AnnotationOps::addLayoutRegion(
     const QJsonObject& annotation,
     const QRectF& bbox,
     const QString& label,
-    const QString& source,
+    AnnotationSource source,
+    bool checked) {
+    return addLayoutRegion(annotation, rectToPoints(bbox), label, source, checked);
+}
+
+QJsonObject AnnotationOps::addLayoutRegion(
+    const QJsonObject& annotation,
+    const QJsonArray& points,
+    const QString& label,
+    AnnotationSource source,
     bool checked) {
     QJsonObject output = annotation;
     QJsonArray regions = output.value("regions").toArray();
+    const QJsonArray normalized = roundedPoints(points);
+    const QRectF bbox = pointsBoundingRect(normalized);
     regions.append(QJsonObject{
         {"id", nextRegionId(output, "layout")},
-        {"type", "layout"},
+        {"type", toString(RegionType::Layout)},
         {"label", label},
         {"bbox", QJsonArray{bbox.x(), bbox.y(), bbox.width(), bbox.height()}},
-        {"source", source},
+        {"shape", normalized.size() == 4 ? "quad" : "polygon"},
+        {"points", normalized},
+        {"source", toString(source)},
         {"checked", checked},
     });
     output["regions"] = regions;
-    output["status"] = "labeled";
+    output["status"] = toString(PageStatus::Labeled);
     return output;
 }
 
@@ -114,7 +148,7 @@ QJsonObject AnnotationOps::setImageLabel(const QJsonObject& annotation, const QS
         labels.append(QJsonObject{{"task", task}, {"label", label}});
     }
     output["image_labels"] = labels;
-    output["status"] = "labeled";
+    output["status"] = toString(PageStatus::Labeled);
     return output;
 }
 
@@ -132,7 +166,7 @@ QJsonObject AnnotationOps::updateRegion(const QJsonObject& annotation, const QSt
         }
     }
     output["regions"] = regions;
-    output["status"] = "labeled";
+    output["status"] = toString(PageStatus::Labeled);
     return output;
 }
 
@@ -179,7 +213,7 @@ QJsonObject AnnotationOps::clearAnnotation(const QJsonObject& annotation) {
         }
     }
     output["image_labels"] = labels;
-    output["status"] = "unlabeled";
+    output["status"] = toString(PageStatus::Unlabeled);
     output["validation"] = QJsonObject{{"passed", false}, {"errors", QJsonArray{}}, {"warnings", QJsonArray{}}};
     return output;
 }

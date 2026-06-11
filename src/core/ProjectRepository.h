@@ -23,7 +23,7 @@ public:
         int width,
         int height,
         int pageIndex,
-        const QString& split = "train");
+        PageSplit split = PageSplit::Train);
 
 private:
     static QStringList projectDirs();

@@ -1,0 +1,14 @@
+{
+  "key": "det_v5_server",
+  "title": "Det | PP-OCRv5 server",
+  "kind": "ocr_det",
+  "export_task": "det",
+  "dataset_name": "ppocr_det",
+  "config_rel": "PaddleX/paddlex/configs/modules/text_detection/PP-OCRv5_server_det.yaml",
+  "default_params": {
+    "epochs": 100,
+    "batch_size": 4,
+    "learning_rate": 0.001
+  },
+  "train_supported": true
+}

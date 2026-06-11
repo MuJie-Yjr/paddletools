@@ -104,7 +104,7 @@ void AssetImporter::createAnnotationForPage(ProjectContext& context, const QStri
     bool ok = false;
     const int pageIndex = assetId.section('_', -1).toInt(&ok);
     const int index = ok ? pageIndex : 1;
-    const QString split = (index % 5 == 0) ? "val" : "train";
+    const PageSplit split = (index % 5 == 0) ? PageSplit::Val : PageSplit::Train;
     const QJsonObject annotation = ProjectRepository::defaultAnnotation(
         assetId,
         normalizedRelativePath(context.root, pagePath),

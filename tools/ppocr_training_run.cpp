@@ -3,6 +3,7 @@
 #include "core/TrainingPreflight.h"
 #include "core/TrainingRunner.h"
 #include "core/TrainingTasks.h"
+#include "tests/fakes/FakeTrainingRunner.h"
 
 #include <QCommandLineParser>
 #include <QCoreApplication>
@@ -32,7 +33,7 @@ QJsonArray taskArray() {
         tasks.append(QJsonObject{
             {QStringLiteral("key"), task.key},
             {QStringLiteral("title"), task.title},
-            {QStringLiteral("kind"), task.kind},
+            {QStringLiteral("kind"), ppocr::toString(task.kind)},
             {QStringLiteral("export_task"), task.exportTask},
             {QStringLiteral("dataset_name"), task.datasetName},
             {QStringLiteral("config"), task.configRel},
@@ -214,7 +215,7 @@ int main(int argc, char** argv) {
         }
 
         ppocr::TrainingRunResult result = parser.isSet(simulateOpt)
-            ? ppocr::TrainingRunner::simulateSuccess(baseDir, context, taskKey, options, QString(), versionId)
+            ? ppocr::tests::FakeTrainingRunner::simulateSuccess(baseDir, context, taskKey, options, QString(), versionId)
             : ppocr::TrainingRunner::runBlocking(baseDir, context, taskKey, options, timeoutSeconds, parser.isSet(echoOpt), versionId);
         writeOptionalFile(parser.value(logOpt), result.logText.toUtf8());
         return writeJsonAndExit(result.report, result.ok ? 0 : 2, reportPath);

@@ -13,17 +13,28 @@ class Exporter {
 public:
     using ProgressCallback = std::function<void(int current, int total, const QString& message)>;
 
+    struct ExportOptions {
+        QString outputRoot;
+        bool timestampedTaskDirs = false;
+    };
+
     static QMap<QString, QString> exportSelected(
         const ProjectContext& context,
         const QSet<QString>& tasks = {"det", "rec", "cls", "textline_cls", "coco"},
         bool checkedOnly = true,
         bool requireValidation = true,
-        const ProgressCallback& progress = {});
+        const ProgressCallback& progress = {},
+        const ExportOptions& options = ExportOptions{});
+
+    static QString datasetOutputDir(const ProjectContext& context, const QString& outputName);
 
 private:
     static QString exportDet(
         const ProjectContext& context,
         const QList<PageInfo>& pages,
+        const QString& exportRoot,
+        const QString& exportStamp,
+        bool timestampedTaskDirs,
         bool checkedOnly,
         int& completed,
         int total,
@@ -31,6 +42,9 @@ private:
     static QString exportRec(
         const ProjectContext& context,
         const QList<PageInfo>& pages,
+        const QString& exportRoot,
+        const QString& exportStamp,
+        bool timestampedTaskDirs,
         bool checkedOnly,
         int& completed,
         int total,
@@ -38,6 +52,9 @@ private:
     static QString exportImageClassification(
         const ProjectContext& context,
         const QList<PageInfo>& pages,
+        const QString& exportRoot,
+        const QString& exportStamp,
+        bool timestampedTaskDirs,
         const QString& outputName,
         const QString& task,
         const QString& labelSetKey,
@@ -48,6 +65,9 @@ private:
     static QString exportCocoLayout(
         const ProjectContext& context,
         const QList<PageInfo>& pages,
+        const QString& exportRoot,
+        const QString& exportStamp,
+        bool timestampedTaskDirs,
         bool checkedOnly,
         int& completed,
         int total,

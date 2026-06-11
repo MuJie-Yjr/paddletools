@@ -6,9 +6,12 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QMap>
+#include <QRegularExpression>
 #include <QSet>
 #include <QStringList>
 #include <QTextStream>
+#include <algorithm>
 
 namespace {
 
@@ -52,6 +55,54 @@ bool looksLikePpocrBaseDir(const QString& baseDir) {
     return QFileInfo(QDir(baseDir).filePath(QStringLiteral("run_labeler.py"))).isFile();
 }
 
+QString readTextResource(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return {};
+    }
+    return QString::fromUtf8(file.readAll());
+}
+
+QMap<QString, QString> loadStyleTokens() {
+    QMap<QString, QString> tokens;
+    const QString source = readTextResource(QStringLiteral(":/resources/qss/tokens.qss"));
+    const QRegularExpression tokenPattern(
+        QStringLiteral("^\\s*@token\\s+([A-Za-z0-9_-]+)\\s+([^;]+);\\s*$"));
+    for (const QString& line : source.split(QLatin1Char('\n'))) {
+        const QRegularExpressionMatch match = tokenPattern.match(line);
+        if (match.hasMatch()) {
+            tokens.insert(match.captured(1), match.captured(2).trimmed());
+        }
+    }
+    return tokens;
+}
+
+QString expandStyleTokens(QString styleSheet, const QMap<QString, QString>& tokens) {
+    QStringList keys = tokens.keys();
+    std::sort(keys.begin(), keys.end(), [](const QString& left, const QString& right) {
+        return left.size() == right.size() ? left < right : left.size() > right.size();
+    });
+    for (const QString& key : keys) {
+        styleSheet.replace(QStringLiteral("@%1").arg(key), tokens.value(key));
+    }
+    return styleSheet;
+}
+
+QString loadWorkbenchStyleSheet() {
+    QString styleSheet;
+    for (const QString& path : {
+             QStringLiteral(":/resources/qss/components.qss"),
+             QStringLiteral(":/resources/qss/dark.qss"),
+         }) {
+        const QString part = readTextResource(path);
+        if (!part.isEmpty()) {
+            styleSheet += part;
+            styleSheet += QLatin1Char('\n');
+        }
+    }
+    return expandStyleTokens(styleSheet, loadStyleTokens());
+}
+
 QString resolveBaseDir() {
     const QString appDir = QCoreApplication::applicationDirPath();
     QStringList candidates;
@@ -91,9 +142,9 @@ int main(int argc, char** argv) {
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName("ppocr_workbench");
 
-    QFile styleFile(":/resources/qss/dark.qss");
-    if (styleFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        app.setStyleSheet(QString::fromUtf8(styleFile.readAll()));
+    const QString styleSheet = loadWorkbenchStyleSheet();
+    if (!styleSheet.isEmpty()) {
+        app.setStyleSheet(styleSheet);
     }
 
     const QStringList rawArguments = QCoreApplication::arguments();

@@ -1,0 +1,14 @@
+{
+  "key": "det_v4_mobile",
+  "title": "Det | PP-OCRv4 mobile",
+  "kind": "ocr_det",
+  "export_task": "det",
+  "dataset_name": "ppocr_det",
+  "config_rel": "PaddleX/paddlex/configs/modules/text_detection/PP-OCRv4_mobile_det.yaml",
+  "default_params": {
+    "epochs": 100,
+    "batch_size": 8,
+    "learning_rate": 0.001
+  },
+  "train_supported": true
+}

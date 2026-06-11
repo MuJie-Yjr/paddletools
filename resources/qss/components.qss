@@ -1,0 +1,760 @@
+﻿* {
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI";
+    font-size: 12px;
+    color: @text-primary;
+    selection-background-color: @color-primary;
+    selection-color: @text-on-accent;
+}
+
+QMainWindow,
+QWidget {
+    background: @color-bg;
+    color: @text-primary;
+}
+
+QWidget#OverviewRoot,
+QWidget#LabelRoot,
+QWidget#TrainingRoot,
+QWidget#PredictionRoot,
+QWidget#DatasetRoot,
+QWidget#ModelLibraryRoot,
+QWidget#LogsRoot,
+QWidget#SettingsRoot,
+QWidget#CanvasPanel {
+    background: @color-bg;
+}
+
+QWidget#Panel,
+QWidget#WorkspaceHeader,
+QWidget#CanvasHeader,
+QWidget#InspectorPanel,
+QWidget#OverviewCard,
+QWidget#OverviewQuick,
+QWidget#OverviewMiniMetric,
+QWidget#PredictionHeader,
+QWidget#PredictionCard,
+QWidget#PredictionModelTile,
+QWidget#PredictionStatCard,
+QWidget#HeaderPanel,
+QWidget#WorkbenchPanel,
+QWidget#MetricPanel,
+QWidget#TrainingCard,
+QWidget#TrainingTaskCard,
+QWidget#TrainingTaskTile,
+QWidget#TrainingOutputBox,
+QWidget#PredictionPreviewFrame {
+    background: @color-surface-1;
+    border: 1px solid @color-border;
+    border-radius: 8px;
+}
+
+QWidget#WorkspaceHeader,
+QWidget#CanvasHeader,
+QWidget#HeaderPanel,
+QWidget#PredictionHeader {
+    background: @color-surface-2;
+    border-color: @color-border-strong;
+}
+
+QWidget#WorkspaceRail {
+    background: @color-rail-bg;
+    border-right: 1px solid @color-border;
+}
+
+QLabel {
+    background: transparent;
+    border: none;
+}
+
+QLabel#Title {
+    color: @text-primary;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+QLabel#RailTitle {
+    color: @text-primary;
+    font-size: 18px;
+    font-weight: 800;
+    padding: 2px 4px;
+}
+
+QLabel#WorkspaceTitle,
+QLabel#PageTitle,
+QLabel#PredictionTitle,
+QLabel#OverviewTitle {
+    color: @text-primary;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+QLabel#SectionTitle,
+QLabel#PredictionSection,
+QLabel#OverviewSection,
+QLabel#TrainingTaskTitle,
+QLabel#TrainingVersionSummary {
+    color: @text-primary;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+QLabel#Muted,
+QLabel#PredictionMuted,
+QLabel#OverviewMuted,
+QLabel#MetricTitle {
+    color: @text-secondary;
+    font-size: 12px;
+}
+
+QLabel#MetricValue,
+QLabel#OverviewMetricValue {
+    color: @text-on-accent;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+QLabel#OverviewMetricIcon {
+    color: @text-on-accent;
+    background: @color-primary;
+    border: 1px solid @color-border-strong;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 44px;
+    min-height: 44px;
+    qproperty-alignment: AlignCenter;
+}
+
+QLabel#OverviewProjectStatus,
+QLabel#StatusOk,
+QLabel#TrainingStatusDone {
+    color: @color-success;
+    background: @status-success-bg;
+    border: 1px solid @status-success-border;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-weight: 700;
+}
+
+QLabel#StatusWarn,
+QLabel#TrainingStatusWarn {
+    color: @color-warning;
+    background: @status-warning-bg;
+    border: 1px solid @status-warning-border;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-weight: 700;
+}
+
+QLabel#TrainingStatusFailed {
+    color: @text-danger;
+    background: @status-danger-bg;
+    border: 1px solid @status-danger-border;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-weight: 800;
+}
+
+QLabel#TrainingStatusIdle,
+QLabel#PredictionStatusBadge,
+QLabel#PredictionBadge,
+QLabel#TrainingBadge,
+QLabel#TrainingBadgeDet,
+QLabel#TrainingBadgeRec,
+QLabel#TrainingBadgeCls,
+QLabel#TrainingBadgeLayout {
+    color: @text-info;
+    background: @status-neutral-bg;
+    border: 1px solid @color-border-strong;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-weight: 700;
+}
+
+QLabel#TrainingBadge {
+    color: @text-success;
+    background: @status-success-bg;
+    border-color: @status-success-border;
+}
+
+QLabel#TrainingBadgeDet {
+    color: @text-info;
+    background: @color-primary-subtle;
+    border-color: @color-primary-hover;
+}
+
+QLabel#TrainingBadgeRec {
+    color: @text-layout;
+    background: @status-layout-bg;
+    border-color: @status-layout-border;
+}
+
+QLabel#TrainingBadgeCls {
+    color: @text-success;
+    background: @status-success-bg;
+    border-color: @status-success-border;
+}
+
+QLabel#TrainingBadgeLayout {
+    color: @text-warning;
+    background: @status-warning-bg;
+    border-color: @status-warning-border;
+}
+
+QLabel#TrainingStatusExport {
+    color: @text-warning;
+    background: @status-warning-bg;
+    border: 1px solid @status-warning-border;
+    border-radius: 5px;
+    padding: 3px 8px;
+    font-weight: 800;
+}
+
+QLabel#TrainingSetupHint {
+    color: @text-info;
+    background: @status-info-bg;
+    border: 1px solid @status-info-border;
+    border-radius: 7px;
+    padding: 8px 10px;
+    line-height: 130%;
+}
+
+QWidget#TrainingTaskCard {
+    background: @color-surface-1;
+    border: 1px solid @color-border;
+    border-radius: 8px;
+}
+
+QWidget#TrainingTaskCard:hover {
+    background: @color-surface-2;
+    border-color: @color-primary-hover;
+}
+
+QLabel#TrainingCardTitle {
+    color: @text-on-accent;
+    background: @color-canvas-bg;
+    border: 1px solid @color-border-muted;
+    border-radius: 2px;
+    font-size: 17px;
+    font-weight: 800;
+    padding: 4px 6px;
+}
+
+QLabel#TrainingCardStrip,
+QLabel#TrainingCardInfo {
+    color: @text-secondary;
+    background: @color-canvas-bg;
+    border: 1px solid @color-border-muted;
+    border-radius: 2px;
+    padding: 5px 6px;
+}
+
+QLabel#TrainingCardInfo {
+    font-size: 13px;
+    line-height: 130%;
+}
+
+QWidget#TrainingCardOutput,
+QWidget#TrainingCardActionPanel {
+    background: @color-surface-2;
+    border: 1px solid @color-border;
+    border-radius: 7px;
+}
+
+QLabel#TrainingCardOutputValue {
+    color: @text-on-accent;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+QPushButton#TrainingCardAction {
+    background: @color-primary-subtle;
+    border-color: @color-border-strong;
+    color: @text-primary;
+    font-size: 14px;
+    font-weight: 800;
+    min-width: 118px;
+}
+
+QPushButton#TrainingCardAction:hover {
+    background: @color-primary-subtle-hover;
+    border-color: @color-primary-hover;
+}
+
+QLabel#PredictionPreview,
+QLabel#ImagePreview,
+QQuickWidget#AnnotationCanvas {
+    background: @color-canvas-bg;
+    border: 1px solid @color-border-strong;
+    border-radius: 8px;
+    color: @text-secondary;
+}
+
+QWidget#PredictionModelHost,
+QScrollArea#PredictionModelScroll,
+QScrollArea#PredictionModelScroll QWidget {
+    background: transparent;
+    border: none;
+}
+
+QPushButton,
+QToolButton {
+    background: @color-control;
+    color: @text-primary;
+    border: 1px solid @color-border-strong;
+    border-radius: 6px;
+    padding: 6px 10px;
+    min-height: 22px;
+}
+
+QPushButton:hover,
+QToolButton:hover {
+    background: @color-control-hover;
+    border-color: @text-disabled;
+}
+
+QPushButton:pressed,
+QToolButton:pressed {
+    background: @color-surface-2;
+    border-color: @text-secondary;
+}
+
+QPushButton:disabled,
+QToolButton:disabled {
+    color: @text-muted;
+    background: @color-disabled-bg;
+    border-color: @color-border-muted;
+}
+
+QPushButton#Primary,
+QPushButton#Primary:pressed {
+    background: @color-primary;
+    border-color: @color-primary-hover;
+    color: @text-on-accent;
+    font-weight: 700;
+}
+
+QPushButton#Primary:hover {
+    background: @color-primary-hover;
+    border-color: @color-info;
+}
+
+QPushButton#Danger {
+    background: @status-danger-bg;
+    border-color: @status-danger-border;
+    color: @text-on-accent;
+}
+
+QPushButton#Danger:hover {
+    background: @status-danger-bg;
+    border-color: @color-danger;
+}
+
+QPushButton#WorkspaceNav {
+    background: @color-rail-button;
+    border: 1px solid @color-border;
+    border-radius: 8px;
+    color: @text-secondary;
+    font-size: 15px;
+    font-weight: 700;
+    min-height: 48px;
+    padding: 9px 18px;
+    text-align: left;
+}
+
+QPushButton#WorkspaceNav:hover {
+    background: @color-surface-2;
+    border-color: @color-border-strong;
+    color: @text-on-accent;
+}
+
+QPushButton#WorkspaceNav:checked {
+    background: @color-primary-active-bg;
+    border: 1px solid @color-primary-hover;
+    color: @text-on-accent;
+    font-weight: 800;
+}
+
+QPushButton#WorkspaceNav:pressed {
+    background: @color-primary-pressed-bg;
+    border-color: @color-info;
+}
+
+QPushButton#ModeButton {
+    min-width: 60px;
+}
+
+QPushButton#ModeButton:checked {
+    background: @color-success;
+    border-color: @color-success-hover;
+    color: @text-on-accent;
+}
+
+QPushButton#OverviewArrow {
+    min-width: 30px;
+    max-width: 36px;
+    padding: 4px 8px;
+}
+
+QLineEdit,
+QTextEdit,
+QPlainTextEdit,
+QComboBox,
+QSpinBox,
+QDoubleSpinBox {
+    background: @color-input;
+    border: 1px solid @color-border-strong;
+    border-radius: 6px;
+    color: @text-primary;
+    padding: 5px 8px;
+}
+
+QLineEdit:hover,
+QTextEdit:hover,
+QPlainTextEdit:hover,
+QComboBox:hover,
+QSpinBox:hover,
+QDoubleSpinBox:hover {
+    border-color: @color-border-strong;
+}
+
+QLineEdit:focus,
+QTextEdit:focus,
+QPlainTextEdit:focus,
+QComboBox:focus,
+QSpinBox:focus,
+QDoubleSpinBox:focus {
+    background: @color-input-focus;
+    border-color: @color-primary-hover;
+}
+
+QLineEdit:disabled,
+QTextEdit:disabled,
+QPlainTextEdit:disabled,
+QComboBox:disabled,
+QSpinBox:disabled,
+QDoubleSpinBox:disabled {
+    color: @text-muted;
+    background: @color-bg;
+    border-color: @color-border-muted;
+}
+
+QComboBox {
+    min-height: 22px;
+    padding-right: 24px;
+}
+
+QComboBox#OverviewProject {
+    min-height: 24px;
+}
+
+QComboBox::drop-down {
+    width: 24px;
+    border: none;
+    background: transparent;
+}
+
+QComboBox::down-arrow {
+    width: 0;
+    height: 0;
+}
+
+QComboBox QAbstractItemView {
+    background: @color-surface-1;
+    border: 1px solid @color-border-strong;
+    color: @text-primary;
+    selection-background-color: @color-selection;
+    selection-color: @text-on-accent;
+    outline: none;
+}
+
+QAbstractSpinBox::up-button,
+QAbstractSpinBox::down-button {
+    width: 18px;
+    background: @color-surface-3;
+    border: none;
+}
+
+QAbstractSpinBox::up-button:hover,
+QAbstractSpinBox::down-button:hover {
+    background: @color-control-hover;
+}
+
+QCheckBox,
+QRadioButton {
+    color: @text-secondary;
+    spacing: 8px;
+}
+
+QCheckBox::indicator,
+QRadioButton::indicator {
+    width: 15px;
+    height: 15px;
+}
+
+QCheckBox::indicator:unchecked {
+    background: @color-input;
+    border: 1px solid @text-disabled;
+    border-radius: 4px;
+}
+
+QCheckBox::indicator:checked {
+    background: @color-success;
+    border: 1px solid @color-success-hover;
+    border-radius: 4px;
+}
+
+QRadioButton::indicator:unchecked {
+    background: @color-input;
+    border: 1px solid @text-disabled;
+    border-radius: 8px;
+}
+
+QRadioButton::indicator:checked {
+    background: @color-success;
+    border: 4px solid @color-input;
+    border-radius: 8px;
+}
+
+QListWidget,
+QTableWidget,
+QTreeView,
+QListView {
+    background: @color-input;
+    border: 1px solid @color-border-strong;
+    border-radius: 6px;
+    color: @text-primary;
+    outline: none;
+    gridline-color: @color-border-muted;
+    alternate-background-color: @color-surface-2;
+}
+
+QListWidget::item {
+    border-bottom: 1px solid @color-border-muted;
+    padding: 6px;
+}
+
+QListWidget::item:hover {
+    background: @color-surface-3;
+}
+
+QListWidget::item:selected {
+    background: @color-selection;
+    border: 1px solid @color-primary-hover;
+    border-radius: 6px;
+    color: @text-on-accent;
+}
+
+QListWidget#ProjectPageList::item {
+    min-height: 50px;
+    padding: 8px 10px;
+}
+
+QListWidget#TrainingVersionList::item {
+    margin: 4px;
+    padding: 8px;
+    background: @color-input;
+    border: 1px solid @color-border-strong;
+    border-radius: 6px;
+}
+
+QListWidget#TrainingVersionList::item:selected {
+    background: @color-selection;
+    border: 2px solid @color-primary-hover;
+}
+
+QTableWidget {
+    selection-background-color: @color-selection;
+    selection-color: @text-on-accent;
+}
+
+QTableWidget#OverviewTable {
+    background: @color-input;
+    gridline-color: @color-border-muted;
+    selection-background-color: @color-selection;
+}
+
+QTableWidget::item {
+    padding: 4px 6px;
+    border: none;
+}
+
+QTableWidget::item:hover {
+    background: @color-surface-3;
+}
+
+QTableWidget::item:selected {
+    background: @color-selection;
+    color: @text-on-accent;
+}
+
+QHeaderView::section {
+    background: @color-surface-2;
+    color: @text-secondary;
+    border: none;
+    border-right: 1px solid @color-border;
+    border-bottom: 1px solid @color-border;
+    padding: 6px 8px;
+    font-weight: 700;
+}
+
+QTabWidget::pane {
+    background: @color-bg;
+    border: 1px solid @color-border-strong;
+    border-radius: 6px;
+}
+
+QTabWidget#InspectorTabs::pane {
+    background: @color-bg;
+    border: 1px solid @color-border-strong;
+    border-top: none;
+}
+
+QTabBar::tab,
+QTabWidget#InspectorTabs QTabBar::tab {
+    background: @color-surface-1;
+    border: 1px solid @color-border-strong;
+    color: @text-secondary;
+    min-width: 58px;
+    min-height: 24px;
+    padding: 5px 10px;
+}
+
+QTabBar::tab:hover,
+QTabWidget#InspectorTabs QTabBar::tab:hover {
+    background: @color-surface-3;
+    color: @text-primary;
+}
+
+QTabBar::tab:selected,
+QTabWidget#InspectorTabs QTabBar::tab:selected {
+    background: @color-selection;
+    border-color: @color-primary-hover;
+    color: @text-on-accent;
+}
+
+QProgressBar {
+    background: @color-input;
+    border: 1px solid @color-border-strong;
+    border-radius: 6px;
+    color: @text-primary;
+    min-height: 20px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background: @color-success;
+    border-radius: 5px;
+}
+
+QToolBar {
+    background: @color-bg;
+    border: none;
+    padding: 6px;
+    spacing: 8px;
+}
+
+QStatusBar {
+    background: @color-surface-1;
+    border-top: 1px solid @color-border;
+    color: @text-secondary;
+}
+
+QScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QScrollBar:vertical,
+QScrollBar:horizontal {
+    background: @color-scroll-bg;
+    border: none;
+}
+
+QScrollBar:vertical {
+    width: 10px;
+    margin: 0;
+}
+
+QScrollBar:horizontal {
+    height: 10px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical,
+QScrollBar::handle:horizontal {
+    background: @text-disabled;
+    border-radius: 4px;
+    min-height: 24px;
+    min-width: 24px;
+}
+
+QScrollBar::handle:vertical:hover,
+QScrollBar::handle:horizontal:hover {
+    background: @text-muted;
+}
+
+QScrollBar::add-line,
+QScrollBar::sub-line,
+QScrollBar::add-page,
+QScrollBar::sub-page {
+    background: transparent;
+    border: none;
+}
+
+QSplitter::handle {
+    background: @color-splitter;
+}
+
+QSplitter::handle:hover {
+    background: @color-border-strong;
+}
+
+QMenu {
+    background: @color-surface-1;
+    border: 1px solid @color-border-strong;
+    color: @text-primary;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 5px 18px;
+    border-radius: 4px;
+}
+
+QMenu::item:selected {
+    background: @color-selection;
+    color: @text-on-accent;
+}
+
+QToolTip {
+    background: @color-surface-3;
+    color: @text-primary;
+    border: 1px solid @color-border-strong;
+    border-radius: 4px;
+    padding: 5px 7px;
+}
+
+QMessageBox,
+QDialog {
+    background: @color-bg;
+}
+
+QWidget#TrainingTaskTile:hover,
+QWidget#PredictionModelTile:hover,
+QWidget#OverviewQuick:hover {
+    background: @color-surface-3;
+    border-color: @status-success-border;
+}
+
+QWidget#OverviewQuick,
+QWidget#OverviewMiniMetric {
+    background: @color-surface-1;
+    border-color: @color-border;
+}
+
+QWidget#TrainingOutputBox {
+    background: @color-input;
+}
+
+

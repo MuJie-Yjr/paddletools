@@ -12,6 +12,26 @@
 
 namespace ppocr {
 
+namespace {
+
+PageSplit annotationSplit(const QJsonObject& annotation) {
+    const QJsonValue value = annotation.value(QStringLiteral("split"));
+    if (value.isUndefined() || value.toString().isEmpty()) {
+        return PageSplit::Train;
+    }
+    return pageSplitFromString(value.toString()).value_or(PageSplit::Unassigned);
+}
+
+PageStatus annotationStatus(const QJsonObject& annotation) {
+    const QJsonValue value = annotation.value(QStringLiteral("status"));
+    if (value.isUndefined() || value.toString().isEmpty()) {
+        return PageStatus::Unlabeled;
+    }
+    return pageStatusFromString(value.toString()).value_or(PageStatus::Error);
+}
+
+}  // namespace
+
 QStringList ProjectRepository::projectDirs() {
     return {
         "assets/raw",
@@ -21,12 +41,18 @@ QStringList ProjectRepository::projectDirs() {
         "crops/rec_train",
         "crops/rec_val",
         "crops/preview",
-        "exports/ppocr_det",
-        "exports/ppocr_rec",
-        "exports/ppocr_cls",
-        "exports/ppocr_textline_cls",
-        "exports/table_classification",
-        "exports/coco_layout",
+        "exports/ppocr_det/current",
+        "exports/ppocr_det/history",
+        "exports/ppocr_rec/current",
+        "exports/ppocr_rec/history",
+        "exports/ppocr_cls/current",
+        "exports/ppocr_cls/history",
+        "exports/ppocr_textline_cls/current",
+        "exports/ppocr_textline_cls/history",
+        "exports/table_classification/current",
+        "exports/table_classification/history",
+        "exports/coco_layout/current",
+        "exports/coco_layout/history",
         "training",
         "cache/ocr_prelabel",
         "cache/cls_prelabel",
@@ -56,7 +82,14 @@ ProjectContext ProjectRepository::createProject(const QString& projectDir, const
         {"crop_root", "crops"},
         {"export_root", "exports"},
         {"label_sets", defaultLabelSets()},
-        {"splits", QJsonObject{{"train_ratio", 0.8}, {"val_ratio", 0.2}, {"strategy", "manual"}}},
+        {"splits", QJsonObject{
+            {"strategy", "page_index_modulo"},
+            {"train_ratio", 0.8},
+            {"val_ratio", 0.2},
+            {"test_ratio", 0.0},
+            {"seed", 42},
+            {"description", "Imported pages use page_index % 5 == 0 for val; all other pages are train."},
+        }},
         {"local_models", QJsonObject{
             {"det_model_dir", ""},
             {"rec_model_dir", ""},
@@ -106,15 +139,15 @@ QList<PageInfo> ProjectRepository::listPages(const ProjectContext& context) {
         QJsonObject annotation;
         int width = 0;
         int height = 0;
-        QString split = "train";
-        QString status = "unlabeled";
+        PageSplit split = PageSplit::Train;
+        PageStatus status = PageStatus::Unlabeled;
         int pageIndex = pages.size() + 1;
         if (QFileInfo::exists(annotationPath)) {
             annotation = readAnnotation(annotationPath);
             width = annotation.value("width").toInt();
             height = annotation.value("height").toInt();
-            split = annotation.value("split").toString("train");
-            status = annotation.value("status").toString("unlabeled");
+            split = annotationSplit(annotation);
+            status = annotationStatus(annotation);
             pageIndex = annotation.value("page_index").toInt(pageIndex);
         } else {
             const QSize size = imageSize(imageInfo.absoluteFilePath());
@@ -184,15 +217,15 @@ QJsonObject ProjectRepository::defaultAnnotation(
     int width,
     int height,
     int pageIndex,
-    const QString& split) {
+    PageSplit split) {
     return {
         {"asset_id", assetId},
         {"image_path", QString(relativeImagePath).replace("\\", "/")},
         {"width", width},
         {"height", height},
         {"page_index", pageIndex},
-        {"split", split},
-        {"status", "unlabeled"},
+        {"split", toString(split)},
+        {"status", toString(PageStatus::Unlabeled)},
         {"image_labels", QJsonArray{
             QJsonObject{{"task", "doc_orientation"}, {"label", ""}},
             QJsonObject{{"task", "textline_orientation"}, {"label", ""}},

@@ -1,0 +1,14 @@
+{
+  "key": "rec_v4_server_doc",
+  "title": "Rec | PP-OCRv4 server document",
+  "kind": "ocr_rec",
+  "export_task": "rec",
+  "dataset_name": "ppocr_rec",
+  "config_rel": "PaddleX/paddlex/configs/modules/text_recognition/PP-OCRv4_server_rec_doc.yaml",
+  "default_params": {
+    "epochs": 20,
+    "batch_size": 8,
+    "learning_rate": 0.001
+  },
+  "train_supported": true
+}

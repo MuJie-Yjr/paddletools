@@ -1,0 +1,18 @@
+{
+  "key": "textline_ori_x025",
+  "title": "Cls | Text line orientation x0.25",
+  "kind": "textline_cls",
+  "export_task": "textline_cls",
+  "dataset_name": "ppocr_textline_cls",
+  "config_rel": "PaddleX/paddlex/configs/modules/textline_orientation/PP-LCNet_x0_25_textline_ori.yaml",
+  "best_weight_rel": "best_model/best_model.pdparams",
+  "infer_dir_rel": "best_model/inference",
+  "default_params": {
+    "epochs": 20,
+    "batch_size": 64,
+    "learning_rate": 0.8,
+    "num_classes": 2,
+    "warmup_steps": 100
+  },
+  "train_supported": true
+}

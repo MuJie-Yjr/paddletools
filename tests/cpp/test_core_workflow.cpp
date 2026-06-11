@@ -14,6 +14,7 @@
 #include "paddle/PaddleClsEngine.h"
 #include "paddle/PaddleDocLayoutEngine.h"
 #include "paddle/PaddleProcess.h"
+#include "tests/fakes/FakeTrainingRunner.h"
 
 #include <QDir>
 #include <QFile>
@@ -200,9 +201,9 @@ int main(int argc, char** argv) {
             QJsonArray{18, 52},
         },
         "VAL2026",
-        "manual",
+        ppocr::AnnotationSource::Manual,
         true);
-    valAnnotation = ppocr::AnnotationOps::addLayoutRegion(valAnnotation, QRectF(16, 70, 150, 48), "text", "manual", true);
+    valAnnotation = ppocr::AnnotationOps::addLayoutRegion(valAnnotation, QRectF(16, 70, 150, 48), "text", ppocr::AnnotationSource::Manual, true);
     valAnnotation = ppocr::AnnotationOps::setImageLabel(valAnnotation, "doc_orientation", "0");
     valAnnotation = ppocr::AnnotationOps::setImageLabel(valAnnotation, "textline_orientation", "0");
     valAnnotation = ppocr::AnnotationOps::setImageLabel(valAnnotation, "table_classification", "wired_table");
@@ -218,7 +219,7 @@ int main(int argc, char** argv) {
             QJsonArray{20, 60},
         },
         "A20260525",
-        "manual",
+        ppocr::AnnotationSource::Manual,
         true);
     const QString movedRegionId = annotation.value("regions").toArray().last().toObject().value("id").toString();
     annotation = ppocr::AnnotationOps::updateRegion(
@@ -265,6 +266,8 @@ int main(int argc, char** argv) {
     };
     const QString detTrainPath = QDir(outputs["det"]).filePath("train.txt");
     const QString recTrainPath = QDir(outputs["rec"]).filePath("train.txt");
+    REQUIRE(QFileInfo(outputs["det"]).fileName() == "current", "project exports write det dataset into current directory");
+    REQUIRE(QFileInfo(QDir(context.exportRoot()).filePath("ppocr_det/history")).isDir(), "project exports create per-dataset history directory");
     REQUIRE(QFileInfo::exists(detTrainPath), "det train.txt exists");
     REQUIRE(QFileInfo::exists(recTrainPath), "rec train.txt exists");
     REQUIRE(QFileInfo::exists(QDir(outputs["rec"]).filePath("dict.txt")), "rec dict.txt exists");
@@ -386,7 +389,7 @@ int main(int argc, char** argv) {
     REQUIRE(preflight.command.arguments.contains("Train.epochs_iters=2"), "training preflight applies epoch override");
     REQUIRE(preflight.report.value("ok").toBool(), "training preflight report is ok");
 
-    const auto simulatedRec = ppocr::TrainingRunner::simulateSuccess(
+    const auto simulatedRec = ppocr::tests::FakeTrainingRunner::simulateSuccess(
         bridgeBase,
         context,
         "rec_v5_server",
@@ -395,6 +398,16 @@ int main(int argc, char** argv) {
         "rec_runner_v1");
     REQUIRE(simulatedRec.ok, "training runner simulated rec run succeeds");
     REQUIRE(simulatedRec.metrics.value("acc").toDouble() > 0.87, "training runner parses simulated metrics");
+    const QString simulatedRecDir = ppocr::TrainingRunStore::versionDir(context, "rec_v5_server", "rec_runner_v1");
+    REQUIRE(QFileInfo::exists(QDir(simulatedRecDir).filePath("config.input.json")), "training version writes input config snapshot");
+    REQUIRE(QFileInfo::exists(QDir(simulatedRecDir).filePath("config.resolved.yaml")), "training version writes resolved config preview");
+    REQUIRE(QFileInfo::exists(QDir(simulatedRecDir).filePath("dataset_snapshot.json")), "training version writes dataset snapshot");
+    REQUIRE(QFileInfo::exists(QDir(simulatedRecDir).filePath("command.json")), "training version writes command json");
+    REQUIRE(QFileInfo::exists(QDir(simulatedRecDir).filePath("environment.json")), "training version writes environment json");
+    REQUIRE(QFileInfo::exists(QDir(simulatedRecDir).filePath("train.log")), "training version writes train log");
+    REQUIRE(QFileInfo::exists(QDir(simulatedRecDir).filePath("metrics.jsonl")), "training version writes metrics jsonl");
+    const QJsonObject simulatedResult = readJson(QDir(simulatedRecDir).filePath("result.json"));
+    REQUIRE(simulatedResult.value("metrics").toObject().value("acc").toDouble() > 0.87, "training result json records metrics");
     auto recManifest = ppocr::TrainingRunStore::loadVersionManifest(context, "rec_v5_server");
     REQUIRE(recManifest.value("current_version_id").toString() == "rec_runner_v1", "training runner promotes current rec version");
     REQUIRE(recManifest.value("best_version_id").toString() == "rec_runner_v1", "training runner promotes best rec version");
@@ -404,6 +417,9 @@ int main(int argc, char** argv) {
     annotation = ppocr::AnnotationOps::addLayoutRegion(annotation, QRectF(40, 150, 80, 50), "figure");
     ppocr::ProjectRepository::writeAnnotation(page.annotationPath, annotation);
     const auto unknownLabelOutputs = ppocr::Exporter::exportSelected(context, {"coco"}, true, false);
+    const auto archivedCocoExports = QDir(QDir(context.exportRoot()).filePath("coco_layout/history"))
+        .entryList({QStringLiteral("*")}, QDir::Dirs | QDir::NoDotAndDotDot);
+    REQUIRE(!archivedCocoExports.isEmpty(), "re-export archives previous coco export instead of deleting it");
     QFile cocoTrainFile(QDir(unknownLabelOutputs["coco"]).filePath("annotations/instance_train.json"));
     REQUIRE(cocoTrainFile.open(QIODevice::ReadOnly), "coco train json can be read");
     const QJsonObject cocoTrain = QJsonDocument::fromJson(cocoTrainFile.readAll()).object();
@@ -419,8 +435,22 @@ int main(int argc, char** argv) {
     REQUIRE(hasFigureCategory, "coco export adds unknown layout category");
     REQUIRE(!hasZeroCategory, "coco export never writes category 0");
 
+    const QString externalRoot = temp.filePath(QStringLiteral("external_dataset"));
+    QDir().mkpath(externalRoot);
+    QFile sentinel(QDir(externalRoot).filePath(QStringLiteral("keep.txt")));
+    REQUIRE(sentinel.open(QIODevice::WriteOnly | QIODevice::Text), "external export sentinel can be created");
+    sentinel.write("keep");
+    sentinel.close();
+    ppocr::Exporter::ExportOptions externalOptions;
+    externalOptions.outputRoot = externalRoot;
+    externalOptions.timestampedTaskDirs = true;
+    const auto externalOutputs = ppocr::Exporter::exportSelected(context, {"det"}, true, false, {}, externalOptions);
+    REQUIRE(QFileInfo::exists(QDir(externalRoot).filePath(QStringLiteral("keep.txt"))), "external export does not remove user directory contents");
+    REQUIRE(QFileInfo(externalOutputs["det"]).absolutePath() == QFileInfo(externalRoot).absoluteFilePath(), "external export writes a task timestamp subdirectory");
+    REQUIRE(QFileInfo(externalOutputs["det"]).fileName().startsWith(QStringLiteral("ppocr_det_")), "external export task directory is timestamped");
+
     const QString runId = ppocr::TrainingRunStore::startRun(context, "det_v5_server", "Det V5 Server", "python main.py");
-    ppocr::TrainingRunStore::finishRun(context, runId, "success", 0);
+    ppocr::TrainingRunStore::finishRun(context, runId, ppocr::RunStatus::Finished, 0);
     const auto latest = ppocr::TrainingRunStore::latestRun(context, "det_v5_server");
     REQUIRE(latest.value("status").toString() == "success", "latest training run is success");
     QFile runsFile(context.path("training/runs.json"));
@@ -445,7 +475,7 @@ int main(int argc, char** argv) {
         context,
         "det_v5_server",
         "Det V5 Server",
-        "det",
+        ppocr::TrainingTaskKind::OcrDet,
         v1,
         "python main.py",
         v1Run,
@@ -453,8 +483,8 @@ int main(int argc, char** argv) {
         v1Dir,
         "cpu",
         3);
-    ppocr::TrainingRunStore::finishRun(context, v1Run, "success", 0, "", QJsonObject{{"hmean", 0.5}});
-    ppocr::TrainingRunStore::finishVersion(context, "det_v5_server", "det", v1, "success", 0, "", QJsonObject{{"hmean", 0.5}});
+    ppocr::TrainingRunStore::finishRun(context, v1Run, ppocr::RunStatus::Finished, 0, "", QJsonObject{{"hmean", 0.5}});
+    ppocr::TrainingRunStore::finishVersion(context, "det_v5_server", ppocr::TrainingTaskKind::OcrDet, v1, ppocr::RunStatus::Finished, 0, "", QJsonObject{{"hmean", 0.5}});
     auto manifest = ppocr::TrainingRunStore::loadVersionManifest(context, "det_v5_server");
     REQUIRE(manifest.value("current_version_id").toString() == v1, "first successful version becomes current");
     REQUIRE(manifest.value("best_version_id").toString() == v1, "first successful version becomes best");
@@ -477,7 +507,7 @@ int main(int argc, char** argv) {
         context,
         "det_v5_server",
         "Det V5 Server",
-        "det",
+        ppocr::TrainingTaskKind::OcrDet,
         v2,
         "python main.py",
         v2Run,
@@ -493,8 +523,8 @@ int main(int argc, char** argv) {
     REQUIRE(v2Model.open(QIODevice::WriteOnly), "mock inference model file is created");
     v2Params.close();
     v2Model.close();
-    ppocr::TrainingRunStore::finishRun(context, v2Run, "success", 0, "", QJsonObject{{"hmean", 0.7}});
-    const QJsonObject finishedV2 = ppocr::TrainingRunStore::finishVersion(context, "det_v5_server", "det", v2, "success", 0, "", QJsonObject{{"hmean", 0.7}});
+    ppocr::TrainingRunStore::finishRun(context, v2Run, ppocr::RunStatus::Finished, 0, "", QJsonObject{{"hmean", 0.7}});
+    const QJsonObject finishedV2 = ppocr::TrainingRunStore::finishVersion(context, "det_v5_server", ppocr::TrainingTaskKind::OcrDet, v2, ppocr::RunStatus::Finished, 0, "", QJsonObject{{"hmean", 0.7}});
     REQUIRE(
         QFileInfo(finishedV2.value("inference_model_dir").toString()).absoluteFilePath() == QFileInfo(v2InferDir).absoluteFilePath(),
         "finished version records inference model directory");

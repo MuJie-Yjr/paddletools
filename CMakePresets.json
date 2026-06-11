@@ -16,33 +16,20 @@
       },
       "binaryDir": "${sourceDir}/build_vs2026",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "Qt6_DIR": "D:/IDE/Qt/6.10.3/msvc2022_64/lib/cmake/Qt6",
-        "OpenCV_DIR": "D:/IDE/opencv/install_vs2026_cuda89_nvcodec_opengl/lib",
-        "PADDLE_LIB": "${sourceDir}/third_party/paddle_inference"
-      },
-      "environment": {
-        "PATH": "D:/IDE/Qt/6.10.3/msvc2022_64/bin;D:/IDE/opencv/install_vs2026_cuda89_nvcodec_opengl/bin;${sourceDir}/third_party/paddle_inference/paddle/lib;${sourceDir}/third_party/paddle_inference/third_party/install/mklml/lib;${sourceDir}/third_party/paddle_inference/third_party/install/onednn/lib;$penv{PATH}"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
       "name": "vs2026-gpu-release",
       "displayName": "VS 2026 x64 Release GPU Paddle Inference",
-      "generator": "Visual Studio 18 2026",
-      "architecture": {
-        "value": "x64",
-        "strategy": "set"
-      },
-      "binaryDir": "${sourceDir}/build_vs2026_gpu",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "Qt6_DIR": "D:/IDE/Qt/6.10.3/msvc2022_64/lib/cmake/Qt6",
-        "OpenCV_DIR": "D:/IDE/opencv/install_vs2026_cuda89_nvcodec_opengl/lib",
-        "PADDLE_LIB": "${sourceDir}/third_party/paddle_inference_gpu"
-      },
-      "environment": {
-        "PATH": "D:/IDE/Qt/6.10.3/msvc2022_64/bin;D:/IDE/opencv/install_vs2026_cuda89_nvcodec_opengl/bin;${sourceDir}/third_party/paddle_inference_gpu/paddle/lib;${sourceDir}/third_party/paddle_inference_gpu/third_party/install/mklml/lib;${sourceDir}/third_party/paddle_inference_gpu/third_party/install/onednn/lib;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4/bin;D:/IDE/TensorRT/bin;$penv{PATH}"
-      }
+      "inherits": "vs2026-release",
+      "binaryDir": "${sourceDir}/build_vs2026_gpu"
+    },
+    {
+      "name": "windows-msvc-release",
+      "displayName": "Windows MSVC Release",
+      "inherits": "vs2026-release",
+      "binaryDir": "${sourceDir}/build/windows-msvc-release"
     }
   ],
   "buildPresets": [
@@ -59,12 +46,24 @@
       "configurePreset": "vs2026-gpu-release",
       "configuration": "Release",
       "jobs": 8
+    },
+    {
+      "name": "windows-msvc-release",
+      "displayName": "Build Windows MSVC Release",
+      "configurePreset": "windows-msvc-release",
+      "configuration": "Release",
+      "jobs": 8
     }
   ],
   "testPresets": [
     {
       "name": "release",
       "configurePreset": "vs2026-release",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-msvc-release",
+      "configurePreset": "windows-msvc-release",
       "configuration": "Release"
     }
   ]

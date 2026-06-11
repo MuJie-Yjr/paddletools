@@ -44,7 +44,9 @@ QList<ValidationIssue> Validator::validateProject(const ProjectContext& context)
     QList<ValidationIssue> issues;
     const auto pages = ProjectRepository::listPages(context);
     const QJsonObject labelSets = context.config.value("label_sets").toObject();
-    QMap<QString, int> splitCounts;
+    int trainPages = 0;
+    int valPages = 0;
+    int unassignedPages = 0;
     for (const auto& page : pages) {
         QJsonObject annotation = ProjectRepository::readAnnotation(page.annotationPath);
         auto pageIssues = validateAnnotation(context, annotation, labelSets);
@@ -64,9 +66,18 @@ QList<ValidationIssue> Validator::validateProject(const ProjectContext& context)
             {"warnings", warnings},
         };
         ProjectRepository::writeAnnotation(page.annotationPath, annotation);
-        splitCounts[page.split] += 1;
+        if (page.split == PageSplit::Train) {
+            ++trainPages;
+        } else if (page.split == PageSplit::Val) {
+            ++valPages;
+        } else if (page.split == PageSplit::Unassigned) {
+            ++unassignedPages;
+        }
     }
-    if (!pages.isEmpty() && (splitCounts.value("train") == 0 || splitCounts.value("val") == 0)) {
+    if (unassignedPages > 0) {
+        addIssue(&issues, "warning", "split", "", QString("invalid or unassigned split on %1 page(s)").arg(unassignedPages));
+    }
+    if (!pages.isEmpty() && (trainPages == 0 || valPages == 0)) {
         addIssue(&issues, "warning", "split", "", "train / val has an empty side");
     }
     return issues;

@@ -11,9 +11,18 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $buildPath = Join-Path $root $BuildDir
 $releasePath = Join-Path $buildPath $Configuration
 $packagePath = Join-Path $root $PackageDir
-$qtBin = "D:/IDE/Qt/6.10.3/msvc2022_64/bin"
-$opencvBin = "D:/IDE/opencv/install_vs2026_cuda89_nvcodec_opengl/bin"
-$paddleRoot = Join-Path $root "third_party/paddle_inference"
+$qtRoot = $env:QT_ROOT
+$qtBin = if ([string]::IsNullOrWhiteSpace($qtRoot)) { "" } else { Join-Path $qtRoot "bin" }
+$opencvBin = $env:OPENCV_RUNTIME_DIR
+if ([string]::IsNullOrWhiteSpace($opencvBin) -and -not [string]::IsNullOrWhiteSpace($env:OpenCV_DIR)) {
+    $opencvBin = Join-Path (Split-Path -Parent $env:OpenCV_DIR) "bin"
+}
+$paddleRoot = if ([string]::IsNullOrWhiteSpace($env:PPOCR_PADDLE_INFERENCE_ROOT)) {
+    Join-Path $root "third_party/paddle_inference"
+} else {
+    $env:PPOCR_PADDLE_INFERENCE_ROOT
+}
+$cmakeExe = Get-Command cmake -ErrorAction SilentlyContinue
 
 function Invoke-Step($Description, [scriptblock]$Action) {
     Write-Host "[package] $Description"
@@ -38,7 +47,10 @@ function Copy-Matches($Pattern, $Destination) {
 }
 
 Invoke-Step "build Release" {
-    & "C:/Program Files/CMake/bin/cmake.exe" --build --preset release
+    if (-not $cmakeExe) {
+        throw "cmake was not found in PATH"
+    }
+    & $cmakeExe.Source --build --preset release
 }
 
 Invoke-Step "prepare package directory $packagePath" {
@@ -63,13 +75,18 @@ foreach ($exe in $executables) {
     Copy-IfExists (Join-Path $releasePath $exe) $packagePath
 }
 
-foreach ($opencvDll in @(
-    "opencv_world*.dll",
-    "opencv_imgcodecs*.dll",
-    "opencv_imgproc*.dll",
-    "opencv_core*.dll"
-)) {
-    Copy-Matches (Join-Path $opencvBin $opencvDll) $packagePath
+if ([string]::IsNullOrWhiteSpace($opencvBin)) {
+    Write-Warning "OPENCV_RUNTIME_DIR is not set; OpenCV DLL copy will be skipped."
+}
+else {
+    foreach ($opencvDll in @(
+        "opencv_world*.dll",
+        "opencv_imgcodecs*.dll",
+        "opencv_imgproc*.dll",
+        "opencv_core*.dll"
+    )) {
+        Copy-Matches (Join-Path $opencvBin $opencvDll) $packagePath
+    }
 }
 
 Get-ChildItem -Path (Join-Path $paddleRoot "paddle/lib") -Filter "*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
@@ -89,8 +106,8 @@ foreach ($rel in @(
     Copy-Matches (Join-Path $dir "*.dll") $packagePath
 }
 
-$windeployqt = Join-Path $qtBin "windeployqt.exe"
-if (Test-Path $windeployqt) {
+$windeployqt = if ([string]::IsNullOrWhiteSpace($qtBin)) { "" } else { Join-Path $qtBin "windeployqt.exe" }
+if (-not [string]::IsNullOrWhiteSpace($windeployqt) -and (Test-Path $windeployqt)) {
     Invoke-Step "run windeployqt" {
         & $windeployqt --release --no-translations --qmldir (Join-Path $root "qml") (Join-Path $packagePath "ppocr_workbench.exe")
     }

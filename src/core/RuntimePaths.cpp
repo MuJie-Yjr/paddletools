@@ -23,8 +23,7 @@ QString RuntimePaths::defaultPaddlexPython() {
     if (!configured.isEmpty()) {
         return configured;
     }
-    const QString preferred = QStringLiteral("D:/IDE/anconda/envs/paddleX-py312/python.exe");
-    return QFileInfo::exists(preferred) ? preferred : QStringLiteral("python");
+    return QStringLiteral("python");
 }
 
 QString RuntimePaths::resolvedExecutable(const QString& executable) {

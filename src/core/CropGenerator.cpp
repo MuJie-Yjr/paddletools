@@ -1,6 +1,7 @@
 #include "core/CropGenerator.h"
 
 #include "core/JsonUtils.h"
+#include "core/ProjectTypes.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -100,8 +101,8 @@ QJsonObject CropGenerator::generateRecCrops(const ProjectContext& context, const
         if (crop.empty()) {
             continue;
         }
-        const QString split = annotation.value("split").toString("train");
-        const QString subdir = split == "train" ? "rec_train" : "rec_val";
+        const auto split = pageSplitFromString(annotation.value("split").toString("train")).value_or(PageSplit::Unassigned);
+        const QString subdir = split == PageSplit::Train ? "rec_train" : "rec_val";
         const QString fileName = QString("%1_%2.jpg").arg(annotation.value("asset_id").toString(), regionId);
         const QString relative = QString("crops/%1/%2").arg(subdir, fileName);
         const QString absolute = context.path(relative);

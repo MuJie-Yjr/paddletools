@@ -1,12 +1,22 @@
 #include "core/TrainingTasks.h"
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QMap>
+#include <QSet>
+
 namespace ppocr {
 namespace {
 
 TrainingTaskSpec makeTask(
     const QString& key,
     const QString& title,
-    const QString& kind,
+    TrainingTaskKind kind,
     const QString& exportTask,
     const QString& datasetName,
     const QString& configRel,
@@ -42,9 +52,7 @@ QString moduleConfig(const QString& relativePath) {
     return QStringLiteral("PaddleX/paddlex/configs/modules/%1").arg(relativePath);
 }
 
-}  // namespace
-
-QList<TrainingTaskSpec> trainingTasks() {
+QList<TrainingTaskSpec> builtInTrainingTasks() {
     const QString bestModelWeight = QStringLiteral("best_model/best_model.pdparams");
     const QString bestModelInfer = QStringLiteral("best_model/inference");
 
@@ -52,7 +60,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("det_v5_server"),
             QStringLiteral("Det | PP-OCRv5 server"),
-            QStringLiteral("det"),
+            TrainingTaskKind::OcrDet,
             QStringLiteral("det"),
             QStringLiteral("ppocr_det"),
             moduleConfig(QStringLiteral("text_detection/PP-OCRv5_server_det.yaml")),
@@ -62,7 +70,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("det_v5_mobile"),
             QStringLiteral("Det | PP-OCRv5 mobile"),
-            QStringLiteral("det"),
+            TrainingTaskKind::OcrDet,
             QStringLiteral("det"),
             QStringLiteral("ppocr_det"),
             moduleConfig(QStringLiteral("text_detection/PP-OCRv5_mobile_det.yaml")),
@@ -72,7 +80,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("det_v4_server"),
             QStringLiteral("Det | PP-OCRv4 server"),
-            QStringLiteral("det"),
+            TrainingTaskKind::OcrDet,
             QStringLiteral("det"),
             QStringLiteral("ppocr_det"),
             moduleConfig(QStringLiteral("text_detection/PP-OCRv4_server_det.yaml")),
@@ -82,7 +90,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("det_v4_mobile"),
             QStringLiteral("Det | PP-OCRv4 mobile"),
-            QStringLiteral("det"),
+            TrainingTaskKind::OcrDet,
             QStringLiteral("det"),
             QStringLiteral("ppocr_det"),
             moduleConfig(QStringLiteral("text_detection/PP-OCRv4_mobile_det.yaml")),
@@ -92,7 +100,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("rec_v5_server"),
             QStringLiteral("Rec | PP-OCRv5 server"),
-            QStringLiteral("rec"),
+            TrainingTaskKind::OcrRec,
             QStringLiteral("rec"),
             QStringLiteral("ppocr_rec"),
             moduleConfig(QStringLiteral("text_recognition/PP-OCRv5_server_rec.yaml")),
@@ -102,7 +110,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("rec_v5_mobile"),
             QStringLiteral("Rec | PP-OCRv5 mobile"),
-            QStringLiteral("rec"),
+            TrainingTaskKind::OcrRec,
             QStringLiteral("rec"),
             QStringLiteral("ppocr_rec"),
             moduleConfig(QStringLiteral("text_recognition/PP-OCRv5_mobile_rec.yaml")),
@@ -112,7 +120,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("rec_v4_server_doc"),
             QStringLiteral("Rec | PP-OCRv4 server document"),
-            QStringLiteral("rec"),
+            TrainingTaskKind::OcrRec,
             QStringLiteral("rec"),
             QStringLiteral("ppocr_rec"),
             moduleConfig(QStringLiteral("text_recognition/PP-OCRv4_server_rec_doc.yaml")),
@@ -122,7 +130,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("rec_v4_server"),
             QStringLiteral("Rec | PP-OCRv4 server"),
-            QStringLiteral("rec"),
+            TrainingTaskKind::OcrRec,
             QStringLiteral("rec"),
             QStringLiteral("ppocr_rec"),
             moduleConfig(QStringLiteral("text_recognition/PP-OCRv4_server_rec.yaml")),
@@ -132,7 +140,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("rec_v4_mobile"),
             QStringLiteral("Rec | PP-OCRv4 mobile"),
-            QStringLiteral("rec"),
+            TrainingTaskKind::OcrRec,
             QStringLiteral("rec"),
             QStringLiteral("ppocr_rec"),
             moduleConfig(QStringLiteral("text_recognition/PP-OCRv4_mobile_rec.yaml")),
@@ -142,7 +150,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("rec_v4_mobile_en"),
             QStringLiteral("Rec | PP-OCRv4 mobile English"),
-            QStringLiteral("rec"),
+            TrainingTaskKind::OcrRec,
             QStringLiteral("rec"),
             QStringLiteral("ppocr_rec"),
             moduleConfig(QStringLiteral("text_recognition/en_PP-OCRv4_mobile_rec.yaml")),
@@ -152,7 +160,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("doc_ori_x1"),
             QStringLiteral("Cls | Document orientation"),
-            QStringLiteral("cls"),
+            TrainingTaskKind::DocCls,
             QStringLiteral("cls"),
             QStringLiteral("ppocr_cls"),
             moduleConfig(QStringLiteral("doc_text_orientation/PP-LCNet_x1_0_doc_ori.yaml")),
@@ -166,7 +174,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("textline_ori_x1"),
             QStringLiteral("Cls | Text line orientation x1.0"),
-            QStringLiteral("cls"),
+            TrainingTaskKind::TextlineCls,
             QStringLiteral("textline_cls"),
             QStringLiteral("ppocr_textline_cls"),
             moduleConfig(QStringLiteral("textline_orientation/PP-LCNet_x1_0_textline_ori.yaml")),
@@ -180,7 +188,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("textline_ori_x025"),
             QStringLiteral("Cls | Text line orientation x0.25"),
-            QStringLiteral("cls"),
+            TrainingTaskKind::TextlineCls,
             QStringLiteral("textline_cls"),
             QStringLiteral("ppocr_textline_cls"),
             moduleConfig(QStringLiteral("textline_orientation/PP-LCNet_x0_25_textline_ori.yaml")),
@@ -194,7 +202,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("table_cls_x1"),
             QStringLiteral("Cls | Table classification"),
-            QStringLiteral("cls"),
+            TrainingTaskKind::TableCls,
             QStringLiteral("table_cls"),
             QStringLiteral("table_classification"),
             moduleConfig(QStringLiteral("table_classification/PP-LCNet_x1_0_table_cls.yaml")),
@@ -208,7 +216,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("layout_plus_l"),
             QStringLiteral("Layout | PP-DocLayout plus-L"),
-            QStringLiteral("layout"),
+            TrainingTaskKind::Layout,
             QStringLiteral("coco"),
             QStringLiteral("coco_layout"),
             moduleConfig(QStringLiteral("layout_detection/PP-DocLayout_plus-L.yaml")),
@@ -222,7 +230,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("layout_l"),
             QStringLiteral("Layout | PP-DocLayout-L"),
-            QStringLiteral("layout"),
+            TrainingTaskKind::Layout,
             QStringLiteral("coco"),
             QStringLiteral("coco_layout"),
             moduleConfig(QStringLiteral("layout_detection/PP-DocLayout-L.yaml")),
@@ -236,7 +244,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("layout_m"),
             QStringLiteral("Layout | PP-DocLayout-M"),
-            QStringLiteral("layout"),
+            TrainingTaskKind::Layout,
             QStringLiteral("coco"),
             QStringLiteral("coco_layout"),
             moduleConfig(QStringLiteral("layout_detection/PP-DocLayout-M.yaml")),
@@ -250,7 +258,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("layout_s"),
             QStringLiteral("Layout | PP-DocLayout-S"),
-            QStringLiteral("layout"),
+            TrainingTaskKind::Layout,
             QStringLiteral("coco"),
             QStringLiteral("coco_layout"),
             moduleConfig(QStringLiteral("layout_detection/PP-DocLayout-S.yaml")),
@@ -264,7 +272,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("layout_block"),
             QStringLiteral("Layout | PP-DocBlockLayout"),
-            QStringLiteral("layout"),
+            TrainingTaskKind::Layout,
             QStringLiteral("coco"),
             QStringLiteral("coco_layout"),
             moduleConfig(QStringLiteral("layout_detection/PP-DocBlockLayout.yaml")),
@@ -278,7 +286,7 @@ QList<TrainingTaskSpec> trainingTasks() {
         makeTask(
             QStringLiteral("uvdoc"),
             QStringLiteral("Doc unwarping | UVDoc"),
-            QStringLiteral("uvdoc"),
+            TrainingTaskKind::Unknown,
             QStringLiteral("uvdoc"),
             QStringLiteral("uvdoc_unwarping"),
             moduleConfig(QStringLiteral("image_unwarping/UVDoc.yaml")),
@@ -292,6 +300,158 @@ QList<TrainingTaskSpec> trainingTasks() {
             false,
             QStringLiteral("UVDoc training is listed for compatibility, but the workbench does not generate an unwarping dataset yet.")),
     };
+}
+
+QStringList manifestSearchDirs() {
+    QStringList candidates;
+    const QByteArray envDir = qgetenv("PPOCR_TRAINING_TASKS_DIR");
+    if (!envDir.isEmpty()) {
+        candidates.append(QString::fromLocal8Bit(envDir));
+    }
+#ifdef PPOCR_PROJECT_ROOT
+    candidates.append(QDir(QStringLiteral(PPOCR_PROJECT_ROOT)).filePath(QStringLiteral("resources/training_tasks")));
+#endif
+    const QString appDir = QCoreApplication::applicationDirPath();
+    if (!appDir.isEmpty()) {
+        candidates.append(QDir(appDir).filePath(QStringLiteral("resources/training_tasks")));
+        candidates.append(QDir(appDir).filePath(QStringLiteral("../resources/training_tasks")));
+    }
+    candidates.append(QDir::current().filePath(QStringLiteral("resources/training_tasks")));
+
+    QStringList result;
+    QSet<QString> seen;
+    for (const auto& path : candidates) {
+        const QString absolute = QFileInfo(path).absoluteFilePath();
+        if (seen.contains(absolute)) {
+            continue;
+        }
+        seen.insert(absolute);
+        result.append(absolute);
+    }
+    return result;
+}
+
+int jsonInt(const QJsonObject& object, const QString& key, int fallback) {
+    const QJsonValue value = object.value(key);
+    if (value.isDouble()) {
+        return value.toInt(fallback);
+    }
+    if (value.isString()) {
+        bool ok = false;
+        const int parsed = value.toString().toInt(&ok);
+        if (ok) {
+            return parsed;
+        }
+    }
+    return fallback;
+}
+
+double jsonDouble(const QJsonObject& object, const QString& key, double fallback) {
+    const QJsonValue value = object.value(key);
+    if (value.isDouble()) {
+        return value.toDouble(fallback);
+    }
+    if (value.isString()) {
+        bool ok = false;
+        const double parsed = value.toString().toDouble(&ok);
+        if (ok) {
+            return parsed;
+        }
+    }
+    return fallback;
+}
+
+TrainingTaskSpec taskFromManifest(const QJsonObject& object, bool* ok) {
+    TrainingTaskSpec task;
+    task.key = object.value(QStringLiteral("key")).toString().trimmed();
+    task.title = object.value(QStringLiteral("title")).toString(task.key).trimmed();
+    task.kind = trainingTaskKindFromString(object.value(QStringLiteral("kind")).toString()).value_or(TrainingTaskKind::Unknown);
+    task.exportTask = object.value(QStringLiteral("export_task")).toString().trimmed();
+    task.datasetName = object.value(QStringLiteral("dataset_name")).toString().trimmed();
+    task.configRel = object.value(QStringLiteral("config_rel")).toString(object.value(QStringLiteral("config")).toString()).trimmed();
+    task.bestWeightRel = object.value(QStringLiteral("best_weight_rel")).toString(task.bestWeightRel).trimmed();
+    task.inferDirRel = object.value(QStringLiteral("infer_dir_rel")).toString(task.inferDirRel).trimmed();
+    task.trainSupported = object.value(QStringLiteral("train_supported")).toBool(true);
+    task.note = object.value(QStringLiteral("note")).toString();
+
+    const QJsonObject params = object.value(QStringLiteral("default_params")).toObject();
+    task.epochs = jsonInt(params, QStringLiteral("epochs"), jsonInt(object, QStringLiteral("epochs"), task.epochs));
+    task.batchSize = jsonInt(params, QStringLiteral("batch_size"), jsonInt(object, QStringLiteral("batch_size"), task.batchSize));
+    task.learningRate = jsonDouble(params, QStringLiteral("learning_rate"), jsonDouble(object, QStringLiteral("learning_rate"), task.learningRate));
+    task.numClasses = jsonInt(params, QStringLiteral("num_classes"), jsonInt(object, QStringLiteral("num_classes"), task.numClasses));
+    task.warmupSteps = jsonInt(params, QStringLiteral("warmup_steps"), jsonInt(object, QStringLiteral("warmup_steps"), task.warmupSteps));
+
+    if (ok) {
+        *ok = !task.key.isEmpty()
+            && !task.title.isEmpty()
+            && !task.exportTask.isEmpty()
+            && !task.datasetName.isEmpty()
+            && !task.configRel.isEmpty();
+    }
+    return task;
+}
+
+QList<TrainingTaskSpec> orderedManifestTasks(const QList<TrainingTaskSpec>& tasks) {
+    QMap<QString, TrainingTaskSpec> byKey;
+    for (const auto& task : tasks) {
+        byKey.insert(task.key, task);
+    }
+
+    QList<TrainingTaskSpec> ordered;
+    for (const auto& builtIn : builtInTrainingTasks()) {
+        if (!byKey.contains(builtIn.key)) {
+            continue;
+        }
+        ordered.append(byKey.take(builtIn.key));
+    }
+    for (auto it = byKey.begin(); it != byKey.end(); ++it) {
+        ordered.append(it.value());
+    }
+    return ordered;
+}
+
+QList<TrainingTaskSpec> loadManifestTasks() {
+    for (const auto& dirPath : manifestSearchDirs()) {
+        QDir dir(dirPath);
+        if (!dir.exists()) {
+            continue;
+        }
+        const auto files = dir.entryInfoList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
+        QList<TrainingTaskSpec> tasks;
+        QSet<QString> keys;
+        for (const auto& info : files) {
+            QFile file(info.absoluteFilePath());
+            if (!file.open(QIODevice::ReadOnly)) {
+                continue;
+            }
+            QJsonParseError error;
+            const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
+            if (error.error != QJsonParseError::NoError || !doc.isObject()) {
+                continue;
+            }
+            bool ok = false;
+            TrainingTaskSpec task = taskFromManifest(doc.object(), &ok);
+            if (!ok || keys.contains(task.key)) {
+                continue;
+            }
+            keys.insert(task.key);
+            tasks.append(task);
+        }
+        if (!tasks.isEmpty()) {
+            return orderedManifestTasks(tasks);
+        }
+    }
+    return {};
+}
+
+}  // namespace
+
+QList<TrainingTaskSpec> trainingTasks() {
+    static const QList<TrainingTaskSpec> tasks = [] {
+        const QList<TrainingTaskSpec> manifestTasks = loadManifestTasks();
+        return manifestTasks.isEmpty() ? builtInTrainingTasks() : manifestTasks;
+    }();
+    return tasks;
 }
 
 TrainingTaskSpec trainingTaskByKey(const QString& key) {

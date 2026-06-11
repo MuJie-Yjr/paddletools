@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/ProjectTypes.h"
+
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QRectF>
@@ -13,13 +15,19 @@ public:
         const QJsonObject& annotation,
         const QJsonArray& points,
         const QString& text = QString(),
-        const QString& source = "manual",
+        AnnotationSource source = AnnotationSource::Manual,
         bool checked = true);
     static QJsonObject addLayoutRegion(
         const QJsonObject& annotation,
         const QRectF& bbox,
         const QString& label,
-        const QString& source = "manual",
+        AnnotationSource source = AnnotationSource::Manual,
+        bool checked = true);
+    static QJsonObject addLayoutRegion(
+        const QJsonObject& annotation,
+        const QJsonArray& points,
+        const QString& label,
+        AnnotationSource source = AnnotationSource::Manual,
         bool checked = true);
     static QJsonObject setImageLabel(const QJsonObject& annotation, const QString& task, const QString& label);
     static QJsonObject updateRegion(const QJsonObject& annotation, const QString& regionId, const QJsonObject& updates);

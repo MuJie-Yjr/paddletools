@@ -27,7 +27,7 @@ public:
     static void finishRun(
         const ProjectContext& context,
         const QString& runId,
-        const QString& status,
+        RunStatus status,
         int exitCode = 0,
         const QString& errorSummary = QString(),
         const QJsonObject& metrics = QJsonObject());
@@ -36,7 +36,7 @@ public:
         const ProjectContext& context,
         const QString& taskKey,
         const QString& taskTitle,
-        const QString& taskKind,
+        TrainingTaskKind taskKind,
         const QString& versionId,
         const QString& command,
         const QString& runId = QString(),
@@ -48,9 +48,9 @@ public:
     static QJsonObject finishVersion(
         const ProjectContext& context,
         const QString& taskKey,
-        const QString& taskKind,
+        TrainingTaskKind taskKind,
         const QString& versionId,
-        const QString& status,
+        RunStatus status,
         int exitCode = 0,
         const QString& errorSummary = QString(),
         const QJsonObject& metrics = QJsonObject(),
@@ -63,6 +63,7 @@ public:
         const QString& versionId,
         bool deleteFiles = true,
         bool allowDeleteBest = false);
+    static double mainMetricValue(const QJsonObject& metrics, TrainingTaskKind taskKind, bool* ok = nullptr);
     static double mainMetricValue(const QJsonObject& metrics, const QString& taskKind, bool* ok = nullptr);
 
 private:

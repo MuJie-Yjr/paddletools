@@ -21,9 +21,11 @@ QJsonObject removeAutoLayoutRegions(QJsonObject annotation) {
     QJsonArray kept;
     for (const auto& value : annotation.value(QStringLiteral("regions")).toArray()) {
         const QJsonObject region = value.toObject();
+        const QString sourceText = region.value(QStringLiteral("source")).toString();
         const bool isAutoLayout =
-            region.value(QStringLiteral("type")).toString() == QStringLiteral("layout")
-            && region.value(QStringLiteral("source")).toString() == QStringLiteral("auto");
+            regionTypeFromString(region.value(QStringLiteral("type")).toString()).value_or(RegionType::OcrText) == RegionType::Layout
+            && (annotationSourceFromString(sourceText).value_or(AnnotationSource::Manual) == AnnotationSource::LayoutPrelabel
+                || sourceText == QStringLiteral("auto"));
         if (!isAutoLayout) {
             kept.append(region);
         }
@@ -94,7 +96,7 @@ QJsonObject LayoutPrelabeler::applyLayoutResult(const QJsonObject& annotation, c
             continue;
         }
         const QString label = box.value(QStringLiteral("label")).toString(QStringLiteral("text"));
-        output = AnnotationOps::addLayoutRegion(output, rect, label.isEmpty() ? QStringLiteral("text") : label, QStringLiteral("auto"), false);
+        output = AnnotationOps::addLayoutRegion(output, rect, label.isEmpty() ? QStringLiteral("text") : label, AnnotationSource::LayoutPrelabel, false);
         output = withLastLayoutMetadata(output, box);
     }
 
@@ -106,7 +108,7 @@ QJsonObject LayoutPrelabeler::applyLayoutResult(const QJsonObject& annotation, c
     });
     output.insert(QStringLiteral("prelabel"), prelabel);
     if (output.value(QStringLiteral("regions")).toArray().isEmpty()) {
-        output.insert(QStringLiteral("status"), QStringLiteral("unlabeled"));
+        output.insert(QStringLiteral("status"), toString(PageStatus::Unlabeled));
     }
     return output;
 }
@@ -115,8 +117,10 @@ int LayoutPrelabeler::autoLayoutRegionCount(const QJsonObject& annotation) {
     int count = 0;
     for (const auto& value : annotation.value(QStringLiteral("regions")).toArray()) {
         const QJsonObject region = value.toObject();
-        if (region.value(QStringLiteral("type")).toString() == QStringLiteral("layout")
-            && region.value(QStringLiteral("source")).toString() == QStringLiteral("auto")) {
+        const QString sourceText = region.value(QStringLiteral("source")).toString();
+        const auto source = annotationSourceFromString(sourceText).value_or(AnnotationSource::Manual);
+        if (regionTypeFromString(region.value(QStringLiteral("type")).toString()).value_or(RegionType::OcrText) == RegionType::Layout
+            && (source == AnnotationSource::LayoutPrelabel || sourceText == QStringLiteral("auto"))) {
             ++count;
         }
     }

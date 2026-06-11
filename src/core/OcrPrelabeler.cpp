@@ -91,7 +91,7 @@ QJsonObject OcrPrelabeler::applyOcrResult(const QJsonObject& annotation, const Q
         const QString text = i < texts.size() ? texts.at(i).toString() : QString();
         const bool hasConfidence = i < scores.size() && scores.at(i).isDouble();
         const double confidence = hasConfidence ? scores.at(i).toDouble() : 0.0;
-        output = AnnotationOps::addOcrRegion(output, points, text, QStringLiteral("auto"), false);
+        output = AnnotationOps::addOcrRegion(output, points, text, AnnotationSource::OcrPrelabel, false);
         output = withRegionConfidence(output, confidence, hasConfidence);
     }
 
@@ -114,7 +114,7 @@ QJsonObject OcrPrelabeler::applyOcrResult(const QJsonObject& annotation, const Q
     }
 
     if (polys.isEmpty()) {
-        output["status"] = "unlabeled";
+        output["status"] = toString(PageStatus::Unlabeled);
     }
     output["prelabel"] = QJsonObject{
         {"engine", ocrResult.value("engine").toString("PaddleOCR/deploy/cpp_infer")},
@@ -128,7 +128,10 @@ int OcrPrelabeler::autoOcrRegionCount(const QJsonObject& annotation) {
     int count = 0;
     for (const auto& value : annotation.value("regions").toArray()) {
         const QJsonObject region = value.toObject();
-        if (region.value("type").toString() == "ocr_text" && region.value("source").toString() == "auto") {
+        const auto type = regionTypeFromString(region.value("type").toString()).value_or(RegionType::OcrText);
+        const QString sourceText = region.value("source").toString();
+        const auto source = annotationSourceFromString(sourceText).value_or(AnnotationSource::Manual);
+        if (type == RegionType::OcrText && (source == AnnotationSource::OcrPrelabel || sourceText == QStringLiteral("auto"))) {
             ++count;
         }
     }

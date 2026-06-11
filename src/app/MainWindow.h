@@ -1,18 +1,20 @@
 #pragma once
 
-#include "core/ProjectTypes.h"
-#include "core/TrainingRunner.h"
+#include "app/controllers/AnnotationController.h"
+#include "app/controllers/DatasetController.h"
+#include "app/controllers/PredictionController.h"
+#include "app/controllers/ProjectController.h"
+#include "app/controllers/TrainingController.h"
+#include "domain/ProjectTypes.h"
 
 #include <QComboBox>
 #include <QCheckBox>
-#include <QElapsedTimer>
 #include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
 #include <QPlainTextEdit>
-#include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QQuickWidget>
@@ -31,6 +33,8 @@ class QTimer;
 namespace ppocr {
 
 struct PaddleCommand;
+struct TrainingOptions;
+struct TrainingTaskSpec;
 class DashboardDonutChart;
 class DashboardLineChart;
 class DashboardSparklineCard;
@@ -72,12 +76,8 @@ private:
     void updatePageMetadataPanel();
     void appendLog(const QString& text);
     void refreshValidationTable(const QList<ValidationIssue>& issues, const QString& logPath);
-    QStringList loadRecentProjects() const;
-    void saveRecentProjects(const QStringList& projects) const;
-    void rememberProject(const QString& projectDir);
     void refreshRecentProjects();
     void connectCanvasSignals();
-    void setCanvasToolMode(const QString& mode);
     void refreshCanvasAnnotation();
     void persistCurrentAnnotation();
     void pushAnnotationUndoState();
@@ -131,7 +131,6 @@ private:
     QJsonObject selectedTrainingVersionObject() const;
     QString selectedTrainingVersionId() const;
     QString selectedTrainingVersionDir() const;
-    void finalizeTrainingRun(const QString& status, int exitCode, const QString& errorSummary);
     void refreshPredictionModels();
     void refreshPredictionModelCards();
     void selectPredictionModel(const QString& kind, const QString& modelDir);
@@ -157,6 +156,9 @@ private slots:
     void importPdfsDialog();
     void validateProject();
     void exportProject();
+    void browseExportOutputDir();
+    void reassignDatasetSplits();
+    void exportDatasetSplitReport();
     void showEnvironmentReport();
     void openValidationLog();
     void checkTrainingSetup();
@@ -169,25 +171,39 @@ private slots:
     void setSelectedTrainingVersionCurrent();
     void deleteSelectedTrainingVersion();
     void openSelectedTrainingVersionDir();
+    void handleTrainingPrepared(
+        const QString& taskKey,
+        const QString& taskKind,
+        const QString& runId,
+        const QString& versionId,
+        const QString& datasetDir,
+        const QString& versionDir,
+        const QString& commandText);
+    void handleTrainingCompleted(
+        const QString& status,
+        int exitCode,
+        const QString& errorSummary,
+        const QJsonObject& metrics,
+        const QJsonObject& finishedVersion,
+        const QString& versionId);
     void startTraining();
     void stopTraining();
-    void handleTrainingOutput();
-    void handleTrainingFinished(int exitCode, QProcess::ExitStatus exitStatus);
-    void handleTrainingError(QProcess::ProcessError error);
     void runInferenceSmoke();
     void browsePredictInputFile();
     void browsePredictInputDir();
     void pastePredictImageFromClipboard();
     void browsePredictOutputDir();
     void openPredictOutputDir();
+    void exportPredictionResults();
+    void addPredictionInputToErrorSamples();
+    void comparePredictionWithPreviousVersion();
     void startPrediction();
     void startSelectedPredictionMode();
     void startClassificationPrediction();
     void startLayoutPrediction();
     void stopPrediction();
-    void handlePredictionOutput();
-    void handlePredictionFinished(int exitCode, QProcess::ExitStatus exitStatus);
-    void handlePredictionError(QProcess::ProcessError error);
+    void handlePredictionFinished(bool processOk, int exitCode, qint64 elapsedMs);
+    void handlePredictionStartFailed(const QString& errorMessage);
     void prelabelSelectedPage();
     void prelabelSelectedPageClassification();
     void prelabelSelectedPageLayout();
@@ -196,6 +212,8 @@ private slots:
     void prelabelAllPagesClassification();
     void prelabelAllPagesLayout();
     void prelabelAllPagesTableClassification();
+    void confirmCurrentPageAnnotations();
+    void confirmAllProjectAnnotations();
     void undoAnnotationEdit();
     void redoAnnotationEdit();
     void clearCurrentPageAnnotations();
@@ -205,6 +223,11 @@ private slots:
     void addLayoutRegionFromCanvas(const QVariant& points);
     void selectRegionFromCanvas(const QString& regionId);
     void moveRegionFromCanvas(const QString& regionId, const QVariant& points);
+    void setCanvasToolMode(const QString& mode);
+    void showCanvasMessage(const QString& message);
+    void confirmSelectedRegionFromCanvas();
+    void toggleSelectedRegionCheckedFromCanvas();
+    void toggleSelectedRegionIgnoreFromCanvas();
     void saveSelectedRegionText();
     void saveImageLabels();
     void deleteSelectedRegion();
@@ -214,10 +237,6 @@ private:
     std::optional<ProjectContext> context_;
     QList<PageInfo> allPages_;
     QList<PageInfo> pages_;
-    QJsonObject currentAnnotation_;
-    QList<QJsonObject> annotationUndoStack_;
-    QList<QJsonObject> annotationRedoStack_;
-    QString selectedRegionId_;
     bool updatingRegionPanel_ = false;
     QString trainingLogBuffer_;
     QString activeTrainingRunId_;
@@ -225,16 +244,17 @@ private:
     QString activeTrainingTaskKind_;
     QString activeTrainingVersionId_;
     QString activeTrainingVersionDir_;
-    TrainingRunStart activeTrainingStart_;
-    bool trainingStopRequested_ = false;
-    bool trainingFinalized_ = false;
     QString predictionLogBuffer_;
     QString activePredictionStagingDir_;
     QString activePredictionPublishDir_;
     QString lastValidationLogPath_;
     bool activePredictionPublishJson_ = true;
     bool activePredictionPublishVisual_ = true;
-    QElapsedTimer predictionTimer_;
+    AnnotationController* annotationController_ = nullptr;
+    DatasetController* datasetController_ = nullptr;
+    PredictionController* predictionController_ = nullptr;
+    ProjectController* projectController_ = nullptr;
+    TrainingController* trainingController_ = nullptr;
 
     QStackedWidget* stack_ = nullptr;
     QLabel* projectLabel_ = nullptr;
@@ -303,6 +323,7 @@ private:
     QCheckBox* exportTableClsCheck_ = nullptr;
     QCheckBox* exportCocoCheck_ = nullptr;
     QCheckBox* exportCheckedOnlyCheck_ = nullptr;
+    QLineEdit* exportOutputDirEdit_ = nullptr;
     QLabel* exportProgressLabel_ = nullptr;
     QProgressBar* exportProgressBar_ = nullptr;
     QPushButton* exportProjectButton_ = nullptr;
@@ -364,7 +385,6 @@ private:
     QTableWidget* trainingVersionManagerTable_ = nullptr;
     QPushButton* startTrainingButton_ = nullptr;
     QPushButton* stopTrainingButton_ = nullptr;
-    QProcess* trainingProcess_ = nullptr;
     QLineEdit* predictInputEdit_ = nullptr;
     QLineEdit* predictOutputEdit_ = nullptr;
     QComboBox* predictDetModelCombo_ = nullptr;
@@ -397,13 +417,13 @@ private:
     QPushButton* startClsPredictionButton_ = nullptr;
     QPushButton* startLayoutPredictionButton_ = nullptr;
     QPushButton* stopPredictionButton_ = nullptr;
-    QProcess* predictionProcess_ = nullptr;
     QThread* activePrelabelThread_ = nullptr;
     QThread* activeExportThread_ = nullptr;
     bool prelabelAllRunning_ = false;
     bool exportRunning_ = false;
     QPlainTextEdit* logEdit_ = nullptr;
     QPlainTextEdit* trainingPreview_ = nullptr;
+    QPlainTextEdit* trainingExpertPreview_ = nullptr;
     QPlainTextEdit* predictionPreview_ = nullptr;
     QPlainTextEdit* predictionStructuredText_ = nullptr;
     bool updatingPageMetadata_ = false;

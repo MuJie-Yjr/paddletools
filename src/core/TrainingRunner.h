@@ -23,7 +23,7 @@ struct TrainingRunStart {
 
 struct TrainingRunResult {
     bool ok = false;
-    QString status;
+    RunStatus status = RunStatus::Pending;
     int exitCode = 0;
     QString errorSummary;
     QString logText;
@@ -44,7 +44,7 @@ public:
     static TrainingRunResult finish(
         const ProjectContext& context,
         const TrainingRunStart& start,
-        const QString& status,
+        RunStatus status,
         int exitCode,
         const QString& errorSummary,
         const QString& logText);
@@ -56,14 +56,6 @@ public:
         const TrainingOptions& options,
         int timeoutSeconds = 0,
         bool echoOutput = false,
-        const QString& versionId = QString());
-
-    static TrainingRunResult simulateSuccess(
-        const QString& baseDir,
-        const ProjectContext& context,
-        const QString& taskKey,
-        const TrainingOptions& options,
-        const QString& logText = QString(),
         const QString& versionId = QString());
 
     static QJsonObject parseMetrics(const QString& logText);

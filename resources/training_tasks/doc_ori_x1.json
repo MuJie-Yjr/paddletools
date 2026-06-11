@@ -1,0 +1,18 @@
+{
+  "key": "doc_ori_x1",
+  "title": "Cls | Document orientation",
+  "kind": "doc_cls",
+  "export_task": "cls",
+  "dataset_name": "ppocr_cls",
+  "config_rel": "PaddleX/paddlex/configs/modules/doc_text_orientation/PP-LCNet_x1_0_doc_ori.yaml",
+  "best_weight_rel": "best_model/best_model.pdparams",
+  "infer_dir_rel": "best_model/inference",
+  "default_params": {
+    "epochs": 50,
+    "batch_size": 16,
+    "learning_rate": 0.08,
+    "num_classes": 4,
+    "warmup_steps": 100
+  },
+  "train_supported": true
+}

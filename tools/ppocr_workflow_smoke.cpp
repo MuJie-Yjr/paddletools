@@ -11,6 +11,7 @@
 #include "core/TrainingTasks.h"
 #include "core/Validator.h"
 #include "paddle/PaddleOcrEngine.h"
+#include "tests/fakes/FakeTrainingRunner.h"
 
 #include <QCommandLineParser>
 #include <QDateTime>
@@ -248,9 +249,9 @@ int main(int argc, char** argv) {
                 annotation,
                 QJsonArray{QJsonArray{26, 34}, QJsonArray{274, 34}, QJsonArray{274, 84}, QJsonArray{26, 84}},
                 QStringLiteral("WORKFLOW2026"),
-                QStringLiteral("manual"),
+                ppocr::AnnotationSource::Manual,
                 true);
-            annotation = ppocr::AnnotationOps::addLayoutRegion(annotation, QRectF(28, 110, 220, 70), QStringLiteral("text"), QStringLiteral("manual"), true);
+            annotation = ppocr::AnnotationOps::addLayoutRegion(annotation, QRectF(28, 110, 220, 70), QStringLiteral("text"), ppocr::AnnotationSource::Manual, true);
             annotation = ppocr::AnnotationOps::setImageLabel(annotation, QStringLiteral("doc_orientation"), QStringLiteral("0"));
             annotation = ppocr::AnnotationOps::setImageLabel(annotation, QStringLiteral("textline_orientation"), QStringLiteral("0"));
             annotation = ppocr::AnnotationOps::setImageLabel(annotation, QStringLiteral("table_classification"), QStringLiteral("wired_table"));
@@ -287,9 +288,9 @@ int main(int argc, char** argv) {
                 annotation,
                 QJsonArray{QJsonArray{22, 24}, QJsonArray{190, 24}, QJsonArray{190, 58}, QJsonArray{22, 58}},
                 QStringLiteral("VAL2026"),
-                QStringLiteral("manual"),
+                ppocr::AnnotationSource::Manual,
                 true);
-            annotation = ppocr::AnnotationOps::addLayoutRegion(annotation, QRectF(24, 82, 170, 52), QStringLiteral("text"), QStringLiteral("manual"), true);
+            annotation = ppocr::AnnotationOps::addLayoutRegion(annotation, QRectF(24, 82, 170, 52), QStringLiteral("text"), ppocr::AnnotationSource::Manual, true);
             annotation = ppocr::AnnotationOps::setImageLabel(annotation, QStringLiteral("doc_orientation"), QStringLiteral("0"));
             annotation = ppocr::AnnotationOps::setImageLabel(annotation, QStringLiteral("textline_orientation"), QStringLiteral("0"));
             annotation = ppocr::AnnotationOps::setImageLabel(annotation, QStringLiteral("table_classification"), QStringLiteral("wired_table"));
@@ -332,7 +333,7 @@ int main(int argc, char** argv) {
         options.batchSize = 1;
         options.learningRate = 0.001;
         report.insert(QStringLiteral("training_preflight"), preflightAllTasks(baseDir, context, options, &errors));
-        const auto simulated = ppocr::TrainingRunner::simulateSuccess(
+        const auto simulated = ppocr::tests::FakeTrainingRunner::simulateSuccess(
             baseDir,
             context,
             QStringLiteral("det_v5_server"),

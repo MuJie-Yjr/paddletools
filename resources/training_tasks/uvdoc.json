@@ -1,0 +1,17 @@
+{
+  "key": "uvdoc",
+  "title": "Doc unwarping | UVDoc",
+  "kind": "uvdoc",
+  "export_task": "uvdoc",
+  "dataset_name": "uvdoc_unwarping",
+  "config_rel": "PaddleX/paddlex/configs/modules/image_unwarping/UVDoc.yaml",
+  "best_weight_rel": "best_accuracy",
+  "infer_dir_rel": "best_accuracy",
+  "default_params": {
+    "epochs": 0,
+    "batch_size": 1,
+    "learning_rate": 0.0
+  },
+  "train_supported": false,
+  "note": "UVDoc training is listed for compatibility, but the workbench does not generate an unwarping dataset yet."
+}

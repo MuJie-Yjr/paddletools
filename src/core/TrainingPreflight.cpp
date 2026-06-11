@@ -1,65 +1,22 @@
 #include "core/TrainingPreflight.h"
 
-#include "core/Exporter.h"
+#include "core/DatasetExporter.h"
+#include "core/DatasetExportPlanner.h"
 #include "core/RuntimePaths.h"
+#include "core/TrainingCommandBuilder.h"
 #include "core/TrainingRunStore.h"
 
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QStringList>
 
 namespace ppocr {
 namespace {
 
-QString effectivePython(const TrainingOptions& options) {
-    return options.pythonExe.trimmed().isEmpty() ? QStringLiteral("python") : options.pythonExe.trimmed();
-}
-
-QString effectiveDevice(const TrainingOptions& options) {
-    return options.device.trimmed().isEmpty() ? QStringLiteral("cpu") : options.device.trimmed();
-}
-
 bool hasPaddleClasTrainingScripts(const QString& path) {
     return !path.trimmed().isEmpty()
         && QFileInfo(QDir(path).filePath(QStringLiteral("tools/train.py"))).isFile();
-}
-
-QString localPretrainedWeightPath(const QString& baseDir, const TrainingTaskSpec& task) {
-    const QString modelName = QFileInfo(task.configRel).baseName();
-    if (modelName.isEmpty()) {
-        return {};
-    }
-    const QString path = QDir(baseDir).filePath(QStringLiteral("model/train/%1_pretrained.pdparams").arg(modelName));
-    return QFileInfo(path).isFile() ? QFileInfo(path).absoluteFilePath() : QString();
-}
-
-int nonEmptyTextLineCount(const QString& path) {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return 0;
-    }
-    int count = 0;
-    while (!file.atEnd()) {
-        if (!file.readLine().trimmed().isEmpty()) {
-            ++count;
-        }
-    }
-    return count;
-}
-
-int cocoAnnotationCount(const QString& path) {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) {
-        return 0;
-    }
-    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    if (!doc.isObject()) {
-        return 0;
-    }
-    return doc.object().value(QStringLiteral("annotations")).toArray().size();
 }
 
 }  // namespace
@@ -71,53 +28,7 @@ PaddleCommand TrainingPreflight::buildCommand(
     const QString& outputDir,
     const TrainingOptions& options) {
     const auto task = trainingTaskByKey(taskKey);
-    const QString datasetDir = context
-        ? QDir(context->exportRoot()).filePath(task.datasetName)
-        : QDir(baseDir).filePath(QStringLiteral("exports/%1").arg(task.datasetName));
-    const int epochs = options.epochs > 0 ? options.epochs : task.epochs;
-    const int batchSize = options.batchSize > 0 ? options.batchSize : task.batchSize;
-    const double learningRate = options.learningRate > 0.0 ? options.learningRate : task.learningRate;
-
-    QStringList overrides = {
-        QStringLiteral("Global.mode=train"),
-        QStringLiteral("Global.device=%1").arg(effectiveDevice(options)),
-        QStringLiteral("Global.output=%1").arg(outputDir),
-        QStringLiteral("Global.dataset_dir=%1").arg(datasetDir),
-        QStringLiteral("Train.epochs_iters=%1").arg(epochs),
-        QStringLiteral("Train.batch_size=%1").arg(batchSize),
-        QStringLiteral("Train.learning_rate=%1").arg(QString::number(learningRate, 'g', 8)),
-    };
-    int numClasses = options.numClasses > 0 ? options.numClasses : task.numClasses;
-    if (task.kind == QStringLiteral("layout") && context) {
-        const int labelCount = context->config.value(QStringLiteral("label_sets"))
-                                   .toObject()
-                                   .value(QStringLiteral("layout"))
-                                   .toArray()
-                                   .size();
-        if (labelCount > 0) {
-            numClasses = labelCount;
-        }
-    }
-    if ((task.kind == QStringLiteral("cls") || task.kind == QStringLiteral("layout")) && numClasses > 0) {
-        overrides.append(QStringLiteral("Train.num_classes=%1").arg(numClasses));
-    }
-    const int warmupSteps = options.warmupSteps > 0 ? options.warmupSteps : task.warmupSteps;
-    if (warmupSteps > 0) {
-        overrides.append(QStringLiteral("Train.warmup_steps=%1").arg(warmupSteps));
-    }
-    const QString pretrainedWeight = localPretrainedWeightPath(baseDir, task);
-    if (!pretrainedWeight.isEmpty()) {
-        overrides.append(QStringLiteral("Train.pretrain_weight_path=%1").arg(pretrainedWeight));
-    }
-    const QString resumePath = options.resumePath.trimmed();
-    if (!resumePath.isEmpty()) {
-        overrides.append(QStringLiteral("Global.resume_path=%1").arg(resumePath));
-    }
-    return PaddleProcess::trainingCommand(
-        baseDir,
-        effectivePython(options),
-        QDir(baseDir).filePath(task.configRel),
-        overrides);
+    return TrainingCommandBuilder::build(baseDir, context, task, outputDir, options);
 }
 
 TrainingPreflightResult TrainingPreflight::run(
@@ -136,7 +47,7 @@ TrainingPreflightResult TrainingPreflight::run(
         {QStringLiteral("ok"), false},
         {QStringLiteral("task_key"), task.key},
         {QStringLiteral("task_title"), task.title},
-        {QStringLiteral("task_kind"), task.kind},
+        {QStringLiteral("task_kind"), toString(task.kind)},
         {QStringLiteral("export_task"), task.exportTask},
         {QStringLiteral("dataset_name"), task.datasetName},
         {QStringLiteral("train_supported"), task.trainSupported},
@@ -149,7 +60,7 @@ TrainingPreflightResult TrainingPreflight::run(
         {QStringLiteral("working_directory"), pathStatus(result.command.workingDirectory)},
         {QStringLiteral("paddlex_main"), pathStatus(QDir(result.command.workingDirectory).filePath(QStringLiteral("main.py")))},
         {QStringLiteral("config"), pathStatus(QDir(baseDir).filePath(task.configRel))},
-        {QStringLiteral("local_pretrained_weight"), pathStatus(localPretrainedWeightPath(baseDir, task))},
+        {QStringLiteral("local_pretrained_weight"), pathStatus(TrainingCommandBuilder::localPretrainedWeightPath(baseDir, task))},
         {QStringLiteral("command"), result.command.displayText()},
         {QStringLiteral("arguments"), QJsonArray::fromStringList(result.command.arguments)},
         {QStringLiteral("environment"), QJsonObject{
@@ -179,7 +90,7 @@ TrainingPreflightResult TrainingPreflight::run(
             : task.note;
         result.errors.append(note);
     }
-    if (task.kind == QStringLiteral("cls")) {
+    if (isClassificationTrainingTaskKind(task.kind)) {
         const QString paddleClasRoot = result.command.environment.value(QStringLiteral("PADDLE_PDX_PADDLECLAS_PATH"));
         if (!hasPaddleClasTrainingScripts(paddleClasRoot)) {
             result.errors.append(QStringLiteral(
@@ -189,31 +100,45 @@ TrainingPreflightResult TrainingPreflight::run(
     }
 
     if (task.trainSupported) {
-        try {
-            const auto outputs = Exporter::exportSelected(context, {task.exportTask}, options.checkedOnly, options.requireValidation);
-            result.datasetDir = outputs.value(task.exportTask);
-            const QJsonObject sampleCounts = exportedSampleCounts(result.datasetDir);
-            result.trainSampleCount = sampleCounts.value(QStringLiteral("train")).toInt();
-            result.valSampleCount = sampleCounts.value(QStringLiteral("val")).toInt();
-            result.sampleCount = sampleCounts.value(QStringLiteral("total")).toInt();
-            report.insert(QStringLiteral("dataset_dir"), QDir::toNativeSeparators(result.datasetDir));
-            report.insert(QStringLiteral("dataset"), pathStatus(result.datasetDir));
-            report.insert(QStringLiteral("sample_count"), result.sampleCount);
-            report.insert(QStringLiteral("sample_counts"), sampleCounts);
-            if (result.sampleCount <= 0) {
-                result.errors.append(QStringLiteral("Exported dataset has no samples: %1").arg(result.datasetDir));
+        const DatasetExportPlan exportPlan = DatasetExportPlanner::plan(context, task, options);
+        const DatasetExportResult exportResult = DatasetExporter::exportDataset(context, exportPlan);
+        report.insert(QStringLiteral("export_plan"), DatasetExportPlanner::toJson(exportPlan));
+        report.insert(QStringLiteral("export"), exportResult.report);
+        result.datasetDir = exportResult.datasetDir;
+        result.trainSampleCount = exportResult.trainSampleCount;
+        result.valSampleCount = exportResult.valSampleCount;
+        result.sampleCount = exportResult.sampleCount;
+        report.insert(QStringLiteral("dataset_dir"), QDir::toNativeSeparators(result.datasetDir));
+        report.insert(QStringLiteral("dataset"), pathStatus(result.datasetDir));
+        report.insert(QStringLiteral("sample_count"), result.sampleCount);
+        report.insert(QStringLiteral("sample_counts"), exportResult.sampleCounts);
+        report.insert(QStringLiteral("checked_only"), options.checkedOnly);
+        if (!exportResult.ok) {
+            result.errors.append(QStringLiteral("Dataset export failed: %1").arg(exportResult.error));
+        } else if (result.sampleCount <= 0) {
+            if (options.checkedOnly) {
+                const QStringList suggestions{
+                    QStringLiteral("点击“批量确认当前页”，确认当前页已检查过的预标注区域。"),
+                    QStringLiteral("点击“批量确认全项目”，在检查后把全项目区域标记为 checked=true。"),
+                    QStringLiteral("如果你明确要使用未确认标注训练，可以关闭 checked-only 导出。"),
+                };
+                report.insert(QStringLiteral("zero_sample_reason"), QStringLiteral("checked_only_without_confirmed_annotations"));
+                report.insert(QStringLiteral("suggestions"), QJsonArray::fromStringList(suggestions));
+                result.errors.append(QStringLiteral(
+                    "训练样本为 0。原因：当前 checked-only 导出只导出 checked=true 的标注，但从 %1 没有导出任何已确认样本；自动预标注结果默认 checked=false。处理方式：批量确认当前页、批量确认全项目，或在确认风险后关闭 checked-only 导出。")
+                    .arg(result.datasetDir));
             } else {
-                if (result.trainSampleCount <= 0) {
-                    result.errors.append(QStringLiteral("Exported dataset has no train samples: %1").arg(result.datasetDir));
-                }
-                if (result.valSampleCount <= 0) {
-                    result.errors.append(QStringLiteral(
-                        "Exported dataset has no val samples: %1. Mark at least one checked sample/page as val before training so PaddleX can evaluate and select a best model.")
-                        .arg(result.datasetDir));
-                }
+                result.errors.append(QStringLiteral("Exported dataset has no samples: %1").arg(result.datasetDir));
             }
-        } catch (const std::exception& exc) {
-            result.errors.append(QStringLiteral("Dataset export failed: %1").arg(QString::fromUtf8(exc.what())));
+        } else {
+            if (result.trainSampleCount <= 0) {
+                result.errors.append(QStringLiteral("Exported dataset has no train samples: %1").arg(result.datasetDir));
+            }
+            if (result.valSampleCount <= 0) {
+                result.errors.append(QStringLiteral(
+                    "Exported dataset has no val samples: %1. Mark at least one checked sample/page as val before training so PaddleX can evaluate and select a best model.")
+                    .arg(result.datasetDir));
+            }
         }
     } else {
         report.insert(QStringLiteral("dataset_dir"), QString());
@@ -228,22 +153,11 @@ TrainingPreflightResult TrainingPreflight::run(
 }
 
 int TrainingPreflight::exportedSampleCount(const QString& datasetDir) {
-    return exportedSampleCounts(datasetDir).value(QStringLiteral("total")).toInt();
+    return DatasetExporter::exportedSampleCount(datasetDir);
 }
 
 QJsonObject TrainingPreflight::exportedSampleCounts(const QString& datasetDir) {
-    const QDir dir(datasetDir);
-    int train = nonEmptyTextLineCount(dir.filePath(QStringLiteral("train.txt")));
-    int val = nonEmptyTextLineCount(dir.filePath(QStringLiteral("val.txt")));
-    if (train + val <= 0) {
-        train = cocoAnnotationCount(dir.filePath(QStringLiteral("annotations/instance_train.json")));
-        val = cocoAnnotationCount(dir.filePath(QStringLiteral("annotations/instance_val.json")));
-    }
-    return QJsonObject{
-        {QStringLiteral("train"), train},
-        {QStringLiteral("val"), val},
-        {QStringLiteral("total"), train + val},
-    };
+    return DatasetExporter::exportedSampleCounts(datasetDir);
 }
 
 QJsonObject TrainingPreflight::pathStatus(const QString& path) {

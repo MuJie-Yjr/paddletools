@@ -1,6 +1,8 @@
 <RCC>
   <qresource prefix="/">
     <file alias="qml/AnnotationCanvas.qml">../qml/AnnotationCanvas.qml</file>
+    <file alias="resources/qss/tokens.qss">qss/tokens.qss</file>
+    <file alias="resources/qss/components.qss">qss/components.qss</file>
     <file alias="resources/qss/dark.qss">qss/dark.qss</file>
   </qresource>
 </RCC>

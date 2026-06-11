@@ -1,0 +1,18 @@
+{
+  "key": "layout_s",
+  "title": "Layout | PP-DocLayout-S",
+  "kind": "layout",
+  "export_task": "coco",
+  "dataset_name": "coco_layout",
+  "config_rel": "PaddleX/paddlex/configs/modules/layout_detection/PP-DocLayout-S.yaml",
+  "best_weight_rel": "best_model/best_model.pdparams",
+  "infer_dir_rel": "best_model/inference",
+  "default_params": {
+    "epochs": 100,
+    "batch_size": 4,
+    "learning_rate": 0.0001,
+    "num_classes": 6,
+    "warmup_steps": 100
+  },
+  "train_supported": true
+}

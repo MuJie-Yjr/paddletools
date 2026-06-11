@@ -135,7 +135,8 @@ QString bestRemainingVersionId(const QJsonObject& manifest) {
     bool hasBest = false;
     for (const auto& value : manifest.value("versions").toArray()) {
         const QJsonObject version = value.toObject();
-        if (version.value("status").toString() != "success") {
+        const auto status = runStatusFromString(version.value("status").toString()).value_or(RunStatus::Pending);
+        if (status != RunStatus::Finished) {
             continue;
         }
         bool ok = false;
@@ -229,7 +230,7 @@ QString TrainingRunStore::startRun(
         {"run_id", runId},
         {"task_key", taskKey},
         {"task_title", taskTitle.isEmpty() ? taskKey : taskTitle},
-        {"status", "running"},
+        {"status", toString(RunStatus::Running)},
         {"started_at", nowText()},
         {"finished_at", ""},
         {"duration_seconds", 0},
@@ -253,19 +254,20 @@ QString TrainingRunStore::startRun(
 void TrainingRunStore::finishRun(
     const ProjectContext& context,
     const QString& runId,
-    const QString& status,
+    RunStatus status,
     int exitCode,
     const QString& errorSummary,
     const QJsonObject& metrics) {
     QJsonArray runs = loadRuns(context);
     bool found = false;
     const QString finishedAt = nowText();
+    const QString statusText = toString(status);
     for (int i = 0; i < runs.size(); ++i) {
         QJsonObject run = runs.at(i).toObject();
         if (run.value("run_id").toString() != runId) {
             continue;
         }
-        run["status"] = status;
+        run["status"] = statusText;
         run["finished_at"] = finishedAt;
         run["duration_seconds"] = durationSeconds(run.value("started_at").toString(), finishedAt);
         run["exit_code"] = exitCode;
@@ -280,7 +282,7 @@ void TrainingRunStore::finishRun(
             {"run_id", runId},
             {"task_key", ""},
             {"task_title", ""},
-            {"status", status},
+            {"status", statusText},
             {"started_at", ""},
             {"finished_at", finishedAt},
             {"duration_seconds", 0},
@@ -326,7 +328,7 @@ void TrainingRunStore::startVersion(
     const ProjectContext& context,
     const QString& taskKey,
     const QString& taskTitle,
-    const QString& taskKind,
+    TrainingTaskKind taskKind,
     const QString& versionId,
     const QString& command,
     const QString& runId,
@@ -344,8 +346,8 @@ void TrainingRunStore::startVersion(
         {"version_label", ""},
         {"task_key", taskKey},
         {"task_title", taskTitle.isEmpty() ? taskKey : taskTitle},
-        {"task_kind", taskKind},
-        {"status", "running"},
+        {"task_kind", toString(taskKind)},
+        {"status", toString(RunStatus::Running)},
         {"started_at", now},
         {"finished_at", ""},
         {"dataset_dir", datasetDir},
@@ -376,9 +378,9 @@ void TrainingRunStore::startVersion(
 QJsonObject TrainingRunStore::finishVersion(
     const ProjectContext& context,
     const QString& taskKey,
-    const QString& taskKind,
+    TrainingTaskKind taskKind,
     const QString& versionId,
-    const QString& status,
+    RunStatus status,
     int exitCode,
     const QString& errorSummary,
     const QJsonObject& metrics,
@@ -403,8 +405,9 @@ QJsonObject TrainingRunStore::finishVersion(
         inferenceModelDir = hasPaddleModelFiles(preferred) ? preferred : findLatestInferenceDir(outputDir);
     }
 
-    version["status"] = status;
-    version["task_kind"] = taskKind;
+    const QString statusText = toString(status);
+    version["status"] = statusText;
+    version["task_kind"] = toString(taskKind);
     version["finished_at"] = finishedAt;
     version["exit_code"] = exitCode;
     version["error_summary"] = errorSummary;
@@ -414,7 +417,7 @@ QJsonObject TrainingRunStore::finishVersion(
     versions.replace(index, version);
     manifest["versions"] = versions;
 
-    if (status == "success") {
+    if (status == RunStatus::Finished) {
         if (manifest.value("current_version_id").toString().isEmpty()) {
             manifest["current_version_id"] = versionId;
         }
@@ -452,7 +455,8 @@ QJsonObject TrainingRunStore::setCurrentVersion(const ProjectContext& context, c
         throw std::runtime_error(QString("unknown training version: %1").arg(versionId).toStdString());
     }
     QJsonObject version = versions.at(index).toObject();
-    if (version.value("status").toString() != "success") {
+    const auto status = runStatusFromString(version.value("status").toString()).value_or(RunStatus::Pending);
+    if (status != RunStatus::Finished) {
         throw std::runtime_error("only successful versions can be set current");
     }
     manifest["current_version_id"] = versionId;
@@ -507,14 +511,25 @@ void TrainingRunStore::deleteVersion(
     }
 }
 
-double TrainingRunStore::mainMetricValue(const QJsonObject& metrics, const QString& taskKind, bool* ok) {
-    const QMap<QString, QStringList> keysByKind{
-        {"det", {"hmean", "score"}},
-        {"rec", {"acc", "accuracy", "score"}},
-        {"cls", {"acc", "accuracy", "score"}},
-        {"layout", {"mAP", "map", "score"}},
-    };
-    const QStringList keys = keysByKind.value(taskKind, {"score"});
+double TrainingRunStore::mainMetricValue(const QJsonObject& metrics, TrainingTaskKind taskKind, bool* ok) {
+    QStringList keys;
+    switch (taskKind) {
+    case TrainingTaskKind::OcrDet:
+        keys = {QStringLiteral("hmean"), QStringLiteral("score")};
+        break;
+    case TrainingTaskKind::OcrRec:
+    case TrainingTaskKind::DocCls:
+    case TrainingTaskKind::TextlineCls:
+    case TrainingTaskKind::TableCls:
+        keys = {QStringLiteral("acc"), QStringLiteral("accuracy"), QStringLiteral("score")};
+        break;
+    case TrainingTaskKind::Layout:
+        keys = {QStringLiteral("mAP"), QStringLiteral("map"), QStringLiteral("score")};
+        break;
+    case TrainingTaskKind::Unknown:
+        keys = {QStringLiteral("score")};
+        break;
+    }
     for (const auto& key : keys) {
         const QJsonValue value = metrics.value(key);
         if (value.isUndefined() || value.isNull()) {
@@ -539,6 +554,11 @@ double TrainingRunStore::mainMetricValue(const QJsonObject& metrics, const QStri
         *ok = false;
     }
     return 0.0;
+}
+
+double TrainingRunStore::mainMetricValue(const QJsonObject& metrics, const QString& taskKind, bool* ok) {
+    const auto parsed = trainingTaskKindFromString(taskKind).value_or(TrainingTaskKind::Unknown);
+    return mainMetricValue(metrics, parsed, ok);
 }
 
 void TrainingRunStore::writeRuns(const ProjectContext& context, const QJsonArray& runs) {

@@ -1,20 +1,34 @@
-build_vs2026/
-build_vs2026_gpu/
+build*/
 dist/
 cache/
 .pytest_cache/
 __pycache__/
 *.pyc
+*.log
 
 third_party/
 model/train/
 model/infer/
+model/**/*.pdparams
+model/**/*.pdiparams
+model/**/*.pdmodel
+model/**/*.onnx
+model/**/*.engine
 *.pdparams
 
 PaddleOCR/
 PaddleX/
 PaddleClas/
+third_party/paddle_inference/
 
 training/
+logs/
+exports/
+predictions/
 recent_projects.json
+CMakeUserPresets.json
+.env
+*.user
 .vscode/
+.vscode/.cmake/
+改进方案.md

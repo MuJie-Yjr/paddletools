@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/ProjectTypes.h"
+#include "core/TrainingOptions.h"
 #include "core/TrainingTasks.h"
 #include "paddle/PaddleProcess.h"
 
@@ -9,19 +10,6 @@
 #include <QStringList>
 
 namespace ppocr {
-
-struct TrainingOptions {
-    QString pythonExe = "python";
-    QString device = "cpu";
-    int epochs = 0;
-    int batchSize = 0;
-    double learningRate = 0.0;
-    int numClasses = 0;
-    int warmupSteps = 0;
-    QString resumePath;
-    bool checkedOnly = true;
-    bool requireValidation = true;
-};
 
 struct TrainingPreflightResult {
     bool ok = false;

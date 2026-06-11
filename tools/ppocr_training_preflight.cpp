@@ -32,7 +32,7 @@ QJsonArray taskArray() {
         tasks.append(QJsonObject{
             {QStringLiteral("key"), task.key},
             {QStringLiteral("title"), task.title},
-            {QStringLiteral("kind"), task.kind},
+            {QStringLiteral("kind"), ppocr::toString(task.kind)},
             {QStringLiteral("export_task"), task.exportTask},
             {QStringLiteral("dataset_name"), task.datasetName},
             {QStringLiteral("config"), task.configRel},
