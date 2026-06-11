@@ -1,0 +1,48 @@
+# Default text handling.
+* text=auto
+
+# Source and project files use LF to avoid noisy Windows line-ending churn.
+*.c text eol=lf
+*.cc text eol=lf
+*.cpp text eol=lf
+*.cxx text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.hxx text eol=lf
+*.qml text eol=lf
+*.qss text eol=lf
+*.qrc text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+CMakePresets.json text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Windows scripts keep CRLF for native tooling friendliness.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets and model artifacts must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.dll binary
+*.exe binary
+*.lib binary
+*.pdb binary
+*.pdparams binary
+*.pdiparams binary
+*.pdmodel binary
+*.onnx binary
+*.engine binary
